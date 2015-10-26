@@ -156,19 +156,18 @@ IpcCreateIpcChannel(LPCWSTR ChannelName,
         return FALSE;
     }
 
-    *ChannelData = malloc(sizeof(CHANNEL_DATA));
-
-    if (*ChannelData == NULL)
-    {
-        return FALSE;
-    }
-
     Result = SsCreateGlobalSharedMemory(ChannelName, &SharedMemory);
 
     if (!Result)
     {
-        free(*ChannelData);
-        *ChannelData = NULL;
+        return FALSE;
+    }
+
+    *ChannelData = malloc(sizeof(CHANNEL_DATA));
+
+    if (*ChannelData == NULL)
+    {
+        SsDestroyGlobalSharedMemory(SharedMemory);
         return FALSE;
     }
 

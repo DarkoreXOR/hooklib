@@ -27,6 +27,7 @@ IlInjectLibrary(LPCWSTR DllFileName,
     }
 
     // 64-bit OS
+    // 64-bit process
     if (IsX64Process)
     {
         return IlInjectLibrary64(DllFileName,
