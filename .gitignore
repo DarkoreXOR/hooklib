@@ -1,0 +1,10 @@
+*.suo
+*.sdf
+*.user
+*.opensdf
+*.userprefs
+
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
