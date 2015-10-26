@@ -1,0 +1,18 @@
+EXPORTS
+IsX64System @1
+IsX64Process @2
+CreateIpcChannel @3
+DestroyIpcChannel @4
+SendIpcMessage @5
+InjectLibrary @6
+InjectLibrary32 @7
+InjectLibrary64 @8
+UninjectLibrary @9
+HookCode @10
+UnhookCode @11
+HookApi @12
+UnhookApi @13
+EnableHook @14
+DisableHook @15
+EnableAllHooks @16
+DisableAllHooks @17
