@@ -5,48 +5,55 @@
 #include <tchar.h>
 #include "ipc_defs.h"
 
+#define IPC_SHARED_MEMORY_NAME_SIZE 0x200
+
 typedef struct _SHARED_MEMORY
 {
-    WCHAR Name[0x100];
+    WCHAR Name[IPC_SHARED_MEMORY_NAME_SIZE];
     HANDLE FileMappingHandle;
     PVOID MemoryPointer;
-    DWORD MemorySize;
+    SIZE_T MemorySize;
 } SHARED_MEMORY, *PSHARED_MEMORY;
 
 BOOL
 IpcCreateSharedMemoryW(
-    LPCWSTR SharedMemoryName,
-    LPCWSTR Postfix,
-    DWORD Size,
+    LPCWSTR ObjectNamespace,
+    LPCWSTR ObjectName,
+    LPCWSTR ObjectPostfix,
+    SIZE_T Size,
     PSHARED_MEMORY SharedMemory
 );
 
 BOOL
 IpcOpenSharedMemoryW(
-    LPCWSTR SharedMemoryName,
-    LPCWSTR Postfix,
+    LPCWSTR ObjectNamespace,
+    LPCWSTR ObjectName,
+    LPCWSTR ObjectPostfix,
     PSHARED_MEMORY SharedMemory
 );
 
 BOOL
-IpcCloseSharedMemory(PSHARED_MEMORY SharedMemory);
+IpcCloseSharedMemory(
+    PSHARED_MEMORY SharedMemory
+);
 
 BOOL
-IpcDestroySharedMemory(PSHARED_MEMORY SharedMemory);
+IpcDestroySharedMemory(
+    PSHARED_MEMORY SharedMemory
+);
 
-VOID
+BOOL
 IpcWriteToSharedMemory(
     PSHARED_MEMORY SharedMemory,
     LPVOID SrcBuffer,
-    DWORD Size
+    SIZE_T Size
 );
 
-VOID
+BOOL
 IpcReadFromSharedMemory(
     PSHARED_MEMORY SharedMemory,
     LPVOID DestBuffer,
-    DWORD Size
+    SIZE_T Size
 );
 
 #endif
-

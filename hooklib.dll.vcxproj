@@ -69,15 +69,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>$(ProjectName)32</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>$(ProjectName)32</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -124,7 +128,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
@@ -147,7 +151,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
@@ -156,27 +160,62 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>
-      </ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(ProjectDir)\exp.def</ModuleDefinitionFile>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dll_entry.c" />
-    <ClCompile Include="dll_utils.c" />
-    <ClCompile Include="hook\hook_wrapper.c" />
-    <ClCompile Include="inject\il_inject.c" />
-    <ClCompile Include="inject\il_utils.c" />
-    <ClCompile Include="inject\il_utils_x64.c" />
-    <ClCompile Include="inject\il_utils_x86.c" />
-    <ClCompile Include="ipc\ipc.c" />
-    <ClCompile Include="ipc\ipc_client_side.c" />
-    <ClCompile Include="ipc\ipc_event.c" />
-    <ClCompile Include="ipc\ipc_server_side.c" />
-    <ClCompile Include="ipc\ipc_shared_memory.c" />
-    <ClCompile Include="ipc\ipc_utils.c" />
+    <ClCompile Include="dll_entry.cpp" />
+    <ClCompile Include="dll_utils.cpp" />
+    <ClCompile Include="hook\hook_wrapper.cpp" />
+    <ClCompile Include="inject\il_inject.cpp" />
+    <ClCompile Include="inject\il_utils.cpp" />
+    <ClCompile Include="inject\il_utils_x64.cpp" />
+    <ClCompile Include="inject\il_utils_x86.cpp" />
+    <ClCompile Include="ipc\ipc.cpp" />
+    <ClCompile Include="ipc\ipc_event.cpp" />
+    <ClCompile Include="ipc\ipc_global.cpp" />
+    <ClCompile Include="ipc\ipc_local.cpp" />
+    <ClCompile Include="ipc\ipc_shared_memory.cpp" />
+    <ClCompile Include="process\process_utils.cpp" />
+    <ClCompile Include="string\str_utils.cpp" />
+    <ClCompile Include="thread\thread_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="asmjit\apibegin.h" />
+    <ClInclude Include="asmjit\apiend.h" />
+    <ClInclude Include="asmjit\asmjit.h" />
+    <ClInclude Include="asmjit\base.h" />
+    <ClInclude Include="asmjit\base\assembler.h" />
+    <ClInclude Include="asmjit\base\codegen.h" />
+    <ClInclude Include="asmjit\base\compiler.h" />
+    <ClInclude Include="asmjit\base\constpool.h" />
+    <ClInclude Include="asmjit\base\containers.h" />
+    <ClInclude Include="asmjit\base\context_p.h" />
+    <ClInclude Include="asmjit\base\cpuinfo.h" />
+    <ClInclude Include="asmjit\base\cputicks.h" />
+    <ClInclude Include="asmjit\base\error.h" />
+    <ClInclude Include="asmjit\base\globals.h" />
+    <ClInclude Include="asmjit\base\intutil.h" />
+    <ClInclude Include="asmjit\base\lock.h" />
+    <ClInclude Include="asmjit\base\logger.h" />
+    <ClInclude Include="asmjit\base\operand.h" />
+    <ClInclude Include="asmjit\base\runtime.h" />
+    <ClInclude Include="asmjit\base\string.h" />
+    <ClInclude Include="asmjit\base\vectypes.h" />
+    <ClInclude Include="asmjit\base\vmem.h" />
+    <ClInclude Include="asmjit\base\zone.h" />
+    <ClInclude Include="asmjit\build.h" />
+    <ClInclude Include="asmjit\config.h" />
+    <ClInclude Include="asmjit\host.h" />
+    <ClInclude Include="asmjit\x86.h" />
+    <ClInclude Include="asmjit\x86\x86assembler.h" />
+    <ClInclude Include="asmjit\x86\x86compiler.h" />
+    <ClInclude Include="asmjit\x86\x86context_p.h" />
+    <ClInclude Include="asmjit\x86\x86cpuinfo.h" />
+    <ClInclude Include="asmjit\x86\x86inst.h" />
+    <ClInclude Include="asmjit\x86\x86operand.h" />
+    <ClInclude Include="asmjit\x86\x86scheduler_p.h" />
     <ClInclude Include="dll_entry.h" />
     <ClInclude Include="dll_utils.h" />
     <ClInclude Include="dll_decls.h" />
@@ -190,10 +229,15 @@
     <ClInclude Include="ipc\ipc_client_side.h" />
     <ClInclude Include="ipc\ipc_defs.h" />
     <ClInclude Include="ipc\ipc_event.h" />
+    <ClInclude Include="ipc\ipc_global.h" />
+    <ClInclude Include="ipc\ipc_local.h" />
     <ClInclude Include="ipc\ipc_server_side.h" />
     <ClInclude Include="ipc\ipc_shared_memory.h" />
     <ClInclude Include="ipc\ipc_types.h" />
     <ClInclude Include="ipc\ipc_utils.h" />
+    <ClInclude Include="process\process_utils.h" />
+    <ClInclude Include="string\str_utils.h" />
+    <ClInclude Include="thread\thread_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

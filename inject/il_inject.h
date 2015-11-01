@@ -6,10 +6,12 @@
 #include "il_utils.h"
 #include "il_utils_x86.h"
 #include "il_utils_x64.h"
+#include "..\ipc\ipc.h"
 
 BOOL
 IlInjectLibrary(
-    LPCWSTR DllFileName,
+    LPCWSTR DllFileName32,
+    LPCWSTR DllFileName64,
     DWORD ProcessId,
     DWORD Timeout
 );

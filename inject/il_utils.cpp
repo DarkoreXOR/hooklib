@@ -1,26 +1,6 @@
 #include "il_utils.h"
 
 BOOL
-IlGetLoadLibraryWProcAddress(PVOID *LoadLibraryWPtr)
-{
-    if (LoadLibraryWPtr == NULL)
-    {
-        return FALSE;
-    }
-
-    HMODULE ModuleHandle = GetModuleHandleW(L"kernel32");
-
-    if (!ModuleHandle)
-    {
-        return FALSE;
-    }
-
-    *LoadLibraryWPtr = GetProcAddress(ModuleHandle, "LoadLibraryW");
-
-    return *LoadLibraryWPtr != NULL;
-}
-
-BOOL
 IlIsX64System()
 {
 #ifndef _M_X64
@@ -133,14 +113,11 @@ IlIsX64Process(DWORD ProcessId,
 }
 
 BOOL
-IlAllocateAndWrite(HANDLE ProcessHandle,
-                   LPVOID Buffer,
-                   SIZE_T Size,
-                   DWORD Protect,
-                   LPVOID *Address)
+IlAllocate(HANDLE ProcessHandle,
+           SIZE_T Size,
+           DWORD Protect,
+           LPVOID *Address)
 {
-    BOOL Result;
-
     if (!Address)
     {
         return FALSE;
@@ -157,15 +134,64 @@ IlAllocateAndWrite(HANDLE ProcessHandle,
         return FALSE;
     }
 
+    return TRUE;
+}
+
+BOOL
+IlWrite(HANDLE ProcessHandle,
+        LPVOID Address,
+        LPVOID Buffer,
+        SIZE_T Size)
+{
+    BOOL Result;
+
     Result = WriteProcessMemory(ProcessHandle,
-                                *Address,
+                                Address,
                                 Buffer,
                                 Size,
                                 NULL);
 
+    return Result;
+}
+
+BOOL
+IlRead(HANDLE ProcessHandle,
+       LPVOID Address,
+       LPVOID Buffer,
+       SIZE_T Size)
+{
+    BOOL Result;
+
+    Result = ReadProcessMemory(ProcessHandle,
+                               Address,
+                               Buffer,
+                               Size,
+                               NULL);
+
+    return Result;
+}
+
+BOOL
+IlAllocateAndWrite(HANDLE ProcessHandle,
+                   LPVOID Buffer,
+                   SIZE_T Size,
+                   DWORD Protect,
+                   LPVOID *Address)
+{
+    BOOL Result;
+
+    Result = IlAllocate(ProcessHandle, Size, Protect, Address);
+
     if (!Result)
     {
-        VirtualFreeEx(ProcessHandle, *Address, 0, MEM_RELEASE);
+        return FALSE;
+    }
+
+    Result = IlWrite(ProcessHandle, *Address, Buffer, Size);
+
+    if (!Result)
+    {
+        IlDeallocate(ProcessHandle, *Address);
     }
 
     return Result;
@@ -175,26 +201,17 @@ BOOL
 IlDeallocate(HANDLE ProcessHandle,
              LPVOID Address)
 {
+    if (!Address)
+    {
+        return FALSE;
+    }
     return VirtualFreeEx(ProcessHandle, Address, 0, MEM_RELEASE);
-}
-
-BOOL
-IlAllocateCode(HANDLE ProcessHandle,
-               PBYTE CodeBuf,
-               SIZE_T CodeSize,
-               LPVOID *Address)
-{
-    return IlAllocateAndWrite(ProcessHandle,
-                              CodeBuf,
-                              CodeSize,
-                              PAGE_EXECUTE_READWRITE,
-                              Address);
 }
 
 BOOL
 IlAllocateWideString(HANDLE ProcessHandle,
                      LPCWSTR String,
-                     LPVOID *Address)
+                     LPVOID *WideStringAddress)
 {
     SIZE_T StringLen;
     SIZE_T StringSize;
@@ -206,7 +223,92 @@ IlAllocateWideString(HANDLE ProcessHandle,
                               (LPVOID)String,
                               StringSize,
                               PAGE_READWRITE,
-                              Address);
+                              WideStringAddress);
 }
 
 
+BOOL
+IlAllocateUnicodeString(HANDLE ProcessHandle,
+                        LPCWSTR WideString,
+                        LPVOID *UnicodeStringAddress)
+{
+    BOOL Result;
+    LPVOID AllocDllFileName;
+    UNICODE_STRING UnicodeTemplate;
+
+    Result = IlAllocateWideString(ProcessHandle,
+                                  WideString,
+                                  &AllocDllFileName);
+
+    if (!Result)
+    {
+        return FALSE;
+    }
+
+    Result = IlAllocate(ProcessHandle,
+                        sizeof(UNICODE_STRING),
+                        PAGE_READWRITE,
+                        UnicodeStringAddress);
+
+    if (!Result)
+    {
+        IlDeallocate(ProcessHandle, AllocDllFileName);
+        return FALSE;
+    }
+
+    UnicodeTemplate.Buffer = (LPWSTR)AllocDllFileName;
+    UnicodeTemplate.Length = (USHORT)wcslen(WideString) * 2;
+    UnicodeTemplate.MaximumLength = UnicodeTemplate.Length + 2;
+
+    Result = IlWrite(ProcessHandle,
+                     *UnicodeStringAddress,
+                     &UnicodeTemplate,
+                     sizeof(UNICODE_STRING));
+
+    return Result;
+}
+
+BOOL
+IlDeallocateUnicodeString(HANDLE ProcessHandle,
+                          LPVOID UnicodeStringAddress)
+{
+    BOOL Result;
+
+    UNICODE_STRING UnicodeTemplate;
+
+    Result = IlRead(ProcessHandle,
+                    UnicodeStringAddress,
+                    &UnicodeTemplate,
+                    sizeof(UNICODE_STRING));
+
+    if (!Result)
+    {
+        return FALSE;
+    }
+
+    Result = IlDeallocate(ProcessHandle, UnicodeStringAddress);
+    Result = IlDeallocate(ProcessHandle, UnicodeTemplate.Buffer) && Result;
+    
+    return Result;
+}
+
+LPVOID
+GetModuleProcAddress(LPCWSTR ModuleName,
+                     LPCSTR ProcName)
+{
+    HMODULE ModuleHandle;
+
+    if (!ModuleName || !ProcName)
+    {
+        return NULL;
+    }
+
+    ModuleHandle = GetModuleHandle(ModuleName);
+
+    if (!ModuleHandle)
+    {
+        return NULL;
+    }
+
+    return GetProcAddress(ModuleHandle, ProcName);
+}

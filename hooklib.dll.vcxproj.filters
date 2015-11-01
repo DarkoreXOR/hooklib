@@ -31,46 +31,79 @@
     <Filter Include="Заголовочные файлы\hook">
       <UniqueIdentifier>{1ae2a765-3852-4a45-84f5-0730fe7c0f6d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Заголовочные файлы\asmjit">
+      <UniqueIdentifier>{7a0bf9da-433e-4a93-8031-170247f1879b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\asmjit\x86">
+      <UniqueIdentifier>{d6dd6941-c581-435e-a3b0-1b8397dcb7de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\asmjit\base">
+      <UniqueIdentifier>{c27e205f-3f96-48da-8969-2ab6b1f8e317}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\thread">
+      <UniqueIdentifier>{6cfd38e3-0b72-41e9-8b36-99dcd5e05003}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\thread">
+      <UniqueIdentifier>{99a33521-e7ff-46fc-bd8d-dc9a92505dc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\process">
+      <UniqueIdentifier>{9677db04-7db7-4f6a-9f52-c62e46316370}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\string">
+      <UniqueIdentifier>{3a09a643-3957-4352-b187-244a7dcc7d61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\string">
+      <UniqueIdentifier>{07e9f582-d4f2-482d-bcad-91a4ed285d14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\process">
+      <UniqueIdentifier>{b22c9602-66f2-4afe-b10e-41cb48a4734b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dll_utils.c">
+    <ClCompile Include="inject\il_utils_x64.cpp">
+      <Filter>Файлы исходного кода\inject</Filter>
+    </ClCompile>
+    <ClCompile Include="inject\il_utils_x86.cpp">
+      <Filter>Файлы исходного кода\inject</Filter>
+    </ClCompile>
+    <ClCompile Include="dll_entry.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="dll_entry.c">
+    <ClCompile Include="dll_utils.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="ipc\ipc.c">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClCompile>
-    <ClCompile Include="ipc\ipc_client_side.c">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClCompile>
-    <ClCompile Include="ipc\ipc_event.c">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClCompile>
-    <ClCompile Include="ipc\ipc_server_side.c">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClCompile>
-    <ClCompile Include="ipc\ipc_shared_memory.c">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClCompile>
-    <ClCompile Include="ipc\ipc_utils.c">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClCompile>
-    <ClCompile Include="inject\il_inject.c">
-      <Filter>Файлы исходного кода\inject</Filter>
-    </ClCompile>
-    <ClCompile Include="inject\il_utils.c">
-      <Filter>Файлы исходного кода\inject</Filter>
-    </ClCompile>
-    <ClCompile Include="inject\il_utils_x64.c">
-      <Filter>Файлы исходного кода\inject</Filter>
-    </ClCompile>
-    <ClCompile Include="inject\il_utils_x86.c">
-      <Filter>Файлы исходного кода\inject</Filter>
-    </ClCompile>
-    <ClCompile Include="hook\hook_wrapper.c">
+    <ClCompile Include="hook\hook_wrapper.cpp">
       <Filter>Файлы исходного кода\hook</Filter>
+    </ClCompile>
+    <ClCompile Include="inject\il_inject.cpp">
+      <Filter>Файлы исходного кода\inject</Filter>
+    </ClCompile>
+    <ClCompile Include="inject\il_utils.cpp">
+      <Filter>Файлы исходного кода\inject</Filter>
+    </ClCompile>
+    <ClCompile Include="string\str_utils.cpp">
+      <Filter>Файлы исходного кода\string</Filter>
+    </ClCompile>
+    <ClCompile Include="process\process_utils.cpp">
+      <Filter>Файлы исходного кода\process</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\thread_utils.cpp">
+      <Filter>Файлы исходного кода\thread</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc_event.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc_global.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc_local.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc_shared_memory.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -82,30 +115,6 @@
     </ClInclude>
     <ClInclude Include="dll_utils.h">
       <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_utils.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_client_side.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_defs.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_event.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_server_side.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_shared_memory.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_types.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
     </ClInclude>
     <ClInclude Include="inject\il_inject.h">
       <Filter>Заголовочные файлы\inject</Filter>
@@ -124,6 +133,147 @@
     </ClInclude>
     <ClInclude Include="hook\hook_wrapper.h">
       <Filter>Заголовочные файлы\hook</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\codegen.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\compiler.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\constpool.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\containers.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\context_p.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\cpuinfo.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\cputicks.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\error.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\globals.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\intutil.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\lock.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\logger.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\operand.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\runtime.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\string.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\vectypes.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\vmem.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\zone.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base\assembler.h">
+      <Filter>Заголовочные файлы\asmjit\base</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86compiler.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86context_p.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86cpuinfo.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86inst.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86operand.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86scheduler_p.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86\x86assembler.h">
+      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\apibegin.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\apiend.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\base.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\build.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\config.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\host.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\x86.h">
+      <Filter>Заголовочные файлы\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="string\str_utils.h">
+      <Filter>Заголовочные файлы\string</Filter>
+    </ClInclude>
+    <ClInclude Include="process\process_utils.h">
+      <Filter>Заголовочные файлы\process</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\thread_utils.h">
+      <Filter>Заголовочные файлы\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_client_side.h">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_defs.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_event.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_global.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_local.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_server_side.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_shared_memory.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_utils.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_types.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -7,6 +7,18 @@
 #define IL_PTR_TO_UI64(p) ((UINT64)(p))
 #define IL_UINT_TO_PTR(ui) ((PVOID)(ui))
 
+//typedef DWORD NTSTATUS;
+
+#define STATUS_SUCCESS ((NTSTATUS)0x00000000)
+#define STATUS_UNSUCCESSFUL ((NTSTATUS)0xC0000001)
+
+typedef struct _UNICODE_STRING
+{
+    USHORT Length;
+    USHORT MaximumLength;
+    PWSTR  Buffer;
+} UNICODE_STRING, *PUNICODE_STRING;
+
 typedef
 BOOL
 (WINAPI *IS_WOW64_PROCESS)(
@@ -20,8 +32,14 @@ VOID
     LPSYSTEM_INFO SysInfo
 );
 
-BOOL
-IlGetLoadLibraryWProcAddress(PVOID *LoadLibraryWPtr);
+typedef
+NTSTATUS
+(NTAPI *LDR_LOAD_DLL)(
+    PWCHAR PathToFile,
+    ULONG Flags,
+    PUNICODE_STRING ModuleFileName,
+    HMODULE *ModuleHandle
+);
 
 BOOL
 IlIsX64System();
@@ -30,6 +48,30 @@ BOOL
 IlIsX64Process(
     DWORD ProcessId,
     PBOOL Result
+);
+
+BOOL
+IlAllocate(
+    HANDLE ProcessHandle,
+    SIZE_T Size,
+    DWORD Protect,
+    LPVOID *Address
+);
+
+BOOL
+IlWrite(
+    HANDLE ProcessHandle,
+    LPVOID Address,
+    LPVOID Buffer,
+    SIZE_T Size
+);
+
+BOOL
+IlRead(
+    HANDLE ProcessHandle,
+    LPVOID Address,
+    LPVOID Buffer,
+    SIZE_T Size
 );
 
 BOOL
@@ -48,18 +90,29 @@ IlDeallocate(
 );
 
 BOOL
-IlAllocateCode(
-    HANDLE ProcessHandle,
-    PBYTE CodeBuf,
-    SIZE_T CodeSize,
-    LPVOID *Address
-);
-
-BOOL
 IlAllocateWideString(
     HANDLE ProcessHandle,
     LPCWSTR String,
-    LPVOID *Address
+    LPVOID *WideStringAddress
+);
+
+BOOL
+IlAllocateUnicodeString(
+    HANDLE ProcessHandle,
+    LPCWSTR WideString,
+    LPVOID *UnicodeStringAddress
+);
+
+BOOL
+IlDeallocateUnicodeString(
+    HANDLE ProcessHandle,
+    LPVOID UnicodeStringAddress
+);
+
+LPVOID
+GetModuleProcAddress(
+    LPCWSTR ModuleName,
+    LPCSTR ProcName
 );
 
 #endif

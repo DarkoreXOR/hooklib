@@ -16,3 +16,4 @@ EnableHook @14
 DisableHook @15
 EnableAllHooks @16
 DisableAllHooks @17
+ProcessHandleToId @18

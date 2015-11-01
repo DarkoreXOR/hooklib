@@ -9,6 +9,13 @@
 #include "ipc\ipc.h"
 #include "hook\hook_wrapper.h"
 
+#if defined _M_X64
+#pragma comment(lib, "libs\\minhook\\libMinHook.x64.lib")
+#pragma comment(lib, "libs\\asmjit\\asmjit64.lib")
+#elif defined _M_IX86
+#pragma comment(lib, "libs\\minhook\\libMinHook.x86.lib")
+#pragma comment(lib, "libs\\asmjit\\asmjit32.lib")
+#endif
 
 BOOL
 EXPORT
@@ -29,6 +36,7 @@ WINAPI
 CreateIpcChannel(
     LPCWSTR ChannelName,
     IPC_ROUTINE Routine,
+    BOOL MultiSession,
     PVOID *ChannelData
 );
 
@@ -46,14 +54,16 @@ SendIpcMessage(
     DWORD MessageSize,
     PVOID AnswerBuf,
     DWORD AnswerSize,
-    DWORD Timeout
+    DWORD Timeout,
+    BOOL MultiSession
 );
 
 BOOL
 EXPORT
 WINAPI
 InjectLibrary(
-    LPCWSTR DllFileName,
+    LPCWSTR DllFileName32,
+    LPCWSTR DllFileName64,
     DWORD ProcessId,
     DWORD Timeout
 );
@@ -133,6 +143,11 @@ BOOL
 EXPORT
 WINAPI
 EnableAllHooks();
+
+DWORD
+EXPORT
+WINAPI
+ProcessHandleToId(HANDLE ProcessHandle);
 
 BOOL
 EXPORT

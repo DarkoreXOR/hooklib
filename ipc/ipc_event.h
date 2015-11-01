@@ -4,16 +4,19 @@
 #include <Windows.h>
 #include <tchar.h>
 
+#define IPC_EVENT_NAME_SIZE 0x200
+
 typedef struct _EVENT
 {
-    WCHAR Name[0x100];
+    WCHAR Name[IPC_EVENT_NAME_SIZE];
     HANDLE Handle;
 } EVENT, *PEVENT;
 
 BOOL
 IpcCreateEventW(
-    LPCWSTR EventName,
-    LPCWSTR Postfix,
+    LPCWSTR ObjectNamespace,
+    LPCWSTR ObjectName,
+    LPCWSTR ObjectPostfix,
     BOOL ManualReset,
     BOOL InitialState,
     PEVENT Event
@@ -21,22 +24,31 @@ IpcCreateEventW(
 
 BOOL
 IpcOpenEventW(
-    LPCWSTR EventName,
-    LPCWSTR Postfix,
+    LPCWSTR ObjectNamespace,
+    LPCWSTR ObjectName,
+    LPCWSTR ObjectPostfix,
     PEVENT Event
 );
 
 BOOL
-IpcCloseEvent(PEVENT Event);
+IpcCloseEvent(
+    PEVENT Event
+);
 
 BOOL
-IpcDestroyEvent(PEVENT Event);
+IpcDestroyEvent(
+    PEVENT Event
+);
 
 BOOL
-IpcSetEvent(PEVENT Event);
+IpcSetEvent(
+    PEVENT Event
+);
 
 BOOL
-IpcResetEvent(PEVENT Event);
+IpcResetEvent(
+    PEVENT Event
+);
 
 DWORD
 IpcWaitEvent(
@@ -45,4 +57,3 @@ IpcWaitEvent(
 );
 
 #endif
-

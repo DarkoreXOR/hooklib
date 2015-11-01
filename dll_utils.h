@@ -6,4 +6,10 @@
 BOOL
 EnableDebugPrivilege(BOOL Enable);
 
+BOOL
+EnableCreateGlobalPrivilege(BOOL Enable);
+
+DWORD
+PsProcessHandleToId(HANDLE ProcessHandle);
+
 #endif

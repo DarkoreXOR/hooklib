@@ -1,11 +1,5 @@
 #include "hook_wrapper.h"
 
-#if defined _M_X64
-#pragma comment(lib, "libs\\minhook\\libMinHook.x64.lib")
-#elif defined _M_IX86
-#pragma comment(lib, "libs\\minhook\\libMinHook.x86.lib")
-#endif
-
 BOOL
 HkInitialize()
 {

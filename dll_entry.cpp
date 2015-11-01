@@ -22,10 +22,12 @@ EXPORT
 WINAPI
 CreateIpcChannel(LPCWSTR ChannelName,
                  IPC_ROUTINE Routine,
+                 BOOL MultiSession,
                  PVOID *ChannelData)
 {
     return IpcCreateIpcChannel(ChannelName,
                                Routine,
+                               MultiSession,
                                ChannelData);
 }
 
@@ -45,24 +47,28 @@ SendIpcMessage(LPCWSTR ChannelName,
                DWORD MessageSize,
                PVOID AnswerBuf,
                DWORD AnswerSize,
-               DWORD Timeout)
+               DWORD Timeout,
+               BOOL MultiSession)
 {
     return IpcSendIpcMessage(ChannelName,
                              MessageBuf,
                              MessageSize,
                              AnswerBuf,
                              AnswerSize,
-                             Timeout);
+                             Timeout,
+                             MultiSession);
 }
 
 BOOL
 EXPORT
 WINAPI
-InjectLibrary(LPCWSTR DllFileName,
+InjectLibrary(LPCWSTR DllFileName32,
+              LPCWSTR DllFileName64,
               DWORD ProcessId,
               DWORD Timeout)
 {
-    return IlInjectLibrary(DllFileName,
+    return IlInjectLibrary(DllFileName32,
+                           DllFileName64,
                            ProcessId,
                            Timeout);
 }
@@ -183,10 +189,19 @@ DisableAllHooks()
     return HkDisableAllHooks();
 }
 
+DWORD
+EXPORT
+WINAPI
+ProcessHandleToId(HANDLE ProcessHandle)
+{
+    return PsProcessHandleToId(ProcessHandle);
+}
+
 VOID
 InitializeLibrary()
 {
     EnableDebugPrivilege(TRUE);
+    EnableCreateGlobalPrivilege(TRUE);
     HkInitialize();
 }
 
@@ -195,6 +210,7 @@ UninitializeLibrary()
 {
     HkUninitialize();
     EnableDebugPrivilege(FALSE);
+    EnableCreateGlobalPrivilege(FALSE);
 }
 
 BOOL

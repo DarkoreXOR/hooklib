@@ -3,10 +3,8 @@
 
 #include <Windows.h>
 #include "il_utils.h"
-
-#define INJECT_CODE_X64_SIZE 51
-
-BYTE InjectCodeX64[INJECT_CODE_X64_SIZE];
+#include "..\asmjit\asmjit.h"
+#include "..\thread\thread_utils.h"
 
 BOOL
 IlInjectLibrary64(
