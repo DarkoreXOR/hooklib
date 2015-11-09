@@ -4,73 +4,55 @@ BOOL
 IpcCreateSharedMemoryW(LPCWSTR ObjectNamespace,
                        LPCWSTR ObjectName,
                        LPCWSTR ObjectPostfix,
-                       SIZE_T Size,
+                       DWORD Size,
                        PSHARED_MEMORY SharedMemory)
 {
-    WCHAR Name[IPC_SHARED_MEMORY_NAME_SIZE];
-    HANDLE FileMappingHandle;
-    PVOID Map;
+    PSID sid;
     SECURITY_DESCRIPTOR sd = { 0 };
     SECURITY_ATTRIBUTES sa = { 0 };
 
-    if (!SharedMemory)
+    IpcMakeObjectName(SharedMemory->ObjectName,
+                      IPC_SHARED_MEMORY_NAME_LENGTH,
+                      ObjectNamespace,
+                      ObjectName,
+                      ObjectPostfix);
+
+    if (!ScCreateSecurityAttributes(&sa, &sd, &sid))
     {
         return FALSE;
     }
 
-    if (ObjectNamespace)
-    {
-        wcscpy_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectNamespace);
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, L"\\");
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectPostfix);
-    }
-    else
-    {
-        wcscpy_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectPostfix);
-    }
+    SharedMemory->ObjectHandle = CreateFileMappingW(INVALID_HANDLE_VALUE,
+                                                    &sa,
+                                                    PAGE_READWRITE,
+                                                    0,
+                                                    (DWORD)Size,
+                                                    SharedMemory->ObjectName);
 
-    ZeroMemory(&sd, sizeof(sd));
+    ScDestroySecurityAttributes(sid);
 
-    InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
-    SetSecurityDescriptorOwner(&sd, NULL, FALSE);
-    SetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE);
-
-    sa.nLength = sizeof(sa);
-    sa.lpSecurityDescriptor = &sd;
-    sa.bInheritHandle = FALSE;
-
-    FileMappingHandle = CreateFileMappingW(INVALID_HANDLE_VALUE,
-                                           &sa,
-                                           PAGE_READWRITE,
-                                           0,
-                                           Size,
-                                           Name);
-
-    if (!FileMappingHandle)
+    if (!(SharedMemory->ObjectHandle))
     {
         return FALSE;
     }
 
-    if (FileMappingHandle && GetLastError() == ERROR_ALREADY_EXISTS)
+    if (SharedMemory->ObjectHandle && GetLastError() == ERROR_ALREADY_EXISTS)
     {
-        CloseHandle(FileMappingHandle);
+        CloseHandle(SharedMemory->ObjectHandle);
         return FALSE;
     }
 
-    Map = MapViewOfFile(FileMappingHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    SharedMemory->MemoryPointer = MapViewOfFile(SharedMemory->ObjectHandle,
+                                                FILE_MAP_ALL_ACCESS,
+                                                0, 0, 0);
 
-    if (!Map)
+    if (!(SharedMemory->MemoryPointer))
     {
-        CloseHandle(FileMappingHandle);
+        CloseHandle(SharedMemory->ObjectHandle);
         return FALSE;
     }
 
-    wcscpy_s(SharedMemory->Name, IPC_SHARED_MEMORY_NAME_SIZE, Name);
-    SharedMemory->MemoryPointer = Map;
     SharedMemory->MemorySize = Size;
-    SharedMemory->FileMappingHandle = FileMappingHandle;
 
     return TRUE;
 }
@@ -81,49 +63,36 @@ IpcOpenSharedMemoryW(LPCWSTR ObjectNamespace,
                      LPCWSTR ObjectPostfix,
                      PSHARED_MEMORY SharedMemory)
 {
-    WCHAR Name[IPC_SHARED_MEMORY_NAME_SIZE];
-    HANDLE FileMappingHandle;
-    PVOID Map;
+    IpcMakeObjectName(SharedMemory->ObjectName,
+                      IPC_SHARED_MEMORY_NAME_LENGTH,
+                      ObjectNamespace,
+                      ObjectName,
+                      ObjectPostfix);
 
-    if (!SharedMemory)
+    SharedMemory->ObjectHandle = OpenFileMappingW(FILE_MAP_ALL_ACCESS,
+                                                  FALSE,
+                                                  SharedMemory->ObjectName);
+
+    if (!(SharedMemory->ObjectHandle))
     {
         return FALSE;
     }
 
-    if (ObjectNamespace)
-    {
-        wcscpy_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectNamespace);
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, L"\\");
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectPostfix);
-    }
-    else
-    {
-        wcscpy_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_SHARED_MEMORY_NAME_SIZE, ObjectPostfix);
-    }
+    SharedMemory->MemoryPointer = MapViewOfFile(SharedMemory->ObjectHandle,
+                                                FILE_MAP_ALL_ACCESS,
+                                                0, 0, 0);
 
-    FileMappingHandle = OpenFileMappingW(FILE_MAP_ALL_ACCESS,
-                                         FALSE,
-                                         Name);
-
-    if (!FileMappingHandle)
+    if (!(SharedMemory->MemoryPointer))
     {
+        CloseHandle(SharedMemory->ObjectHandle);
         return FALSE;
     }
 
-    Map = MapViewOfFile(FileMappingHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    wcscpy_s(SharedMemory->ObjectName,
+             IPC_SHARED_MEMORY_NAME_LENGTH,
+             SharedMemory->ObjectName);
 
-    if (!Map)
-    {
-        CloseHandle(FileMappingHandle);
-        return FALSE;
-    }
-
-    wcscpy_s(SharedMemory->Name, IPC_SHARED_MEMORY_NAME_SIZE, Name);
-    SharedMemory->MemoryPointer = Map;
     SharedMemory->MemorySize = 0;
-    SharedMemory->FileMappingHandle = FileMappingHandle;
 
     return TRUE;
 }
@@ -136,9 +105,9 @@ IpcCloseSharedMemory(PSHARED_MEMORY SharedMemory)
         return FALSE;
     }
 
-    BOOL result = CloseHandle(SharedMemory->FileMappingHandle);
+    CloseHandle(SharedMemory->ObjectHandle);
 
-    return UnmapViewOfFile(SharedMemory->MemoryPointer) && result;
+    return UnmapViewOfFile(SharedMemory->MemoryPointer);
 }
 
 BOOL
@@ -149,40 +118,34 @@ IpcDestroySharedMemory(PSHARED_MEMORY SharedMemory)
 
 BOOL
 IpcWriteToSharedMemory(PSHARED_MEMORY SharedMemory,
-                       LPVOID SrcBuffer,
-                       SIZE_T Size)
+                       LPVOID SourceBuffer,
+                       DWORD Size)
 {
-    BOOL Result;
-    HANDLE ProcessHandle;
-    SIZE_T NumOfBytes;
+    BOOL result;
+    SIZE_T numOfBytes;
 
-    ProcessHandle = GetCurrentProcess();
-
-    Result = WriteProcessMemory(ProcessHandle,
+    result = WriteProcessMemory(GetCurrentProcess(),
                                 SharedMemory->MemoryPointer,
-                                SrcBuffer,
+                                SourceBuffer,
                                 Size,
-                                &NumOfBytes);
+                                &numOfBytes);
 
-    return Result && Size == NumOfBytes;
+    return result && Size == numOfBytes;
 }
 
 BOOL
 IpcReadFromSharedMemory(PSHARED_MEMORY SharedMemory,
-                        LPVOID DestBuffer,
-                        SIZE_T Size)
+                        LPVOID DestinationBuffer,
+                        DWORD Size)
 {
-    BOOL Result;
-    HANDLE ProcessHandle;
-    SIZE_T NumOfBytes;
+    BOOL result;
+    SIZE_T numOfBytes;
 
-    ProcessHandle = GetCurrentProcess();
-
-    Result = ReadProcessMemory(ProcessHandle,
+    result = ReadProcessMemory(GetCurrentProcess(),
                                SharedMemory->MemoryPointer,
-                               DestBuffer,
+                               DestinationBuffer,
                                Size,
-                               &NumOfBytes);
+                               &numOfBytes);
 
-    return Result && Size == NumOfBytes;
+    return result && Size == numOfBytes;
 }

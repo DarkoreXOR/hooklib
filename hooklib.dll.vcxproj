@@ -70,18 +70,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(ProjectName)32</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(ProjectName)64</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>$(ProjectName)32</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>$(ProjectName)64</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -89,15 +97,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;ASMJIT_EMBED;ASMJIT_DEBUG;ASMJIT_BUILD_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>$(ProjectDir)\exp.def</ModuleDefinitionFile>
+      <AdditionalDependencies>libs\asmjit\asmjitd32.lib;libs\minhook\libMinHook.x86.dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -106,16 +115,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;ASMJIT_EMBED;ASMJIT_DEBUG;ASMJIT_BUILD_X86;ASMJIT_BUILD_X64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>
-      </ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(ProjectDir)\exp.def</ModuleDefinitionFile>
+      <AdditionalDependencies>libs\asmjit\asmjitd64.lib;libs\minhook\libMinHook.x64.dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -126,7 +135,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;ASMJIT_EMBED;ASMJIT_RELEASE;ASMJIT_BUILD_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -138,7 +147,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>$(ProjectDir)\exp.def</ModuleDefinitionFile>
-      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalDependencies>libs\asmjit\asmjitr32.lib;libs\minhook\libMinHook.x86.rel.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -149,7 +159,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKLIBDLL_EXPORTS;ASMJIT_EMBED;ASMJIT_RELEASE;ASMJIT_BUILD_X86;ASMJIT_BUILD_X64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -161,10 +171,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>$(ProjectDir)\exp.def</ModuleDefinitionFile>
-      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalDependencies>libs\asmjit\asmjitr64.lib;libs\minhook\libMinHook.x64.rel.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dll_decls.cpp" />
     <ClCompile Include="dll_entry.cpp" />
     <ClCompile Include="dll_utils.cpp" />
     <ClCompile Include="hook\hook_wrapper.cpp" />
@@ -176,9 +188,15 @@
     <ClCompile Include="ipc\ipc_event.cpp" />
     <ClCompile Include="ipc\ipc_global.cpp" />
     <ClCompile Include="ipc\ipc_local.cpp" />
+    <ClCompile Include="ipc\ipc_server_side.cpp" />
     <ClCompile Include="ipc\ipc_shared_memory.cpp" />
+    <ClCompile Include="ipc\ipc_utils.cpp" />
+    <ClCompile Include="logger\logger_utils.cpp" />
+    <ClCompile Include="native\native_utils.cpp" />
     <ClCompile Include="process\process_utils.cpp" />
-    <ClCompile Include="string\str_utils.cpp" />
+    <ClCompile Include="security\security_utils.cpp" />
+    <ClCompile Include="string\string_utils.cpp" />
+    <ClCompile Include="system\system_utils.cpp" />
     <ClCompile Include="thread\thread_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -227,7 +245,6 @@
     <ClInclude Include="inject\il_utils_x86.h" />
     <ClInclude Include="ipc\ipc.h" />
     <ClInclude Include="ipc\ipc_client_side.h" />
-    <ClInclude Include="ipc\ipc_defs.h" />
     <ClInclude Include="ipc\ipc_event.h" />
     <ClInclude Include="ipc\ipc_global.h" />
     <ClInclude Include="ipc\ipc_local.h" />
@@ -235,8 +252,13 @@
     <ClInclude Include="ipc\ipc_shared_memory.h" />
     <ClInclude Include="ipc\ipc_types.h" />
     <ClInclude Include="ipc\ipc_utils.h" />
+    <ClInclude Include="logger\logger_utils.h" />
+    <ClInclude Include="native\native_utils.h" />
     <ClInclude Include="process\process_utils.h" />
-    <ClInclude Include="string\str_utils.h" />
+    <ClInclude Include="security\security_utils.h" />
+    <ClInclude Include="stddefs.h" />
+    <ClInclude Include="string\string_utils.h" />
+    <ClInclude Include="system\system_utils.h" />
     <ClInclude Include="thread\thread_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

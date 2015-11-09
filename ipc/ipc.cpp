@@ -11,174 +11,208 @@ CopyThreadData(PTHREAD_DATA Dest,
 BOOL
 ThreadLoop(PTHREAD_DATA ThreadData)
 {
-    BOOL Result;
-    CHANNEL_HEADER ChannelHeader;
-    PSHARED_MEMORY LocalSharedMemory = NULL;
-    PEVENT LocalChannelMessageEvent = NULL;
-    PEVENT LocalChannelAnswerEvent = NULL;
-    PEVENT LocalChannelReadyEvent = NULL;
-    LPVOID MessageBuf;
-    SIZE_T MessageSize;
-    LPVOID AnswerBuf;
-    SIZE_T AnswerSize;
-    SIZE_T LocalChannelSize;
+    BOOL result;
+    CHANNEL_HEADER channelHeader;
+    PSHARED_MEMORY localSharedMemory = NULL;
+    PEVENT localChannelMessageEvent = NULL;
+    PEVENT localChannelAnswerEvent = NULL;
+    PEVENT localChannelReadyEvent = NULL;
+    LPVOID messageBuffer;
+    DWORD messageSize;
+    LPVOID answerBuffer;
+    DWORD answerSize;
+    DWORD localChannelSize;
 
-    Result = GlobalWaitChannelSendHeaderEvent(ThreadData->GlobalChannelName,
+    result = GlobalWaitChannelSendHeaderEvent(ThreadData->GlobalChannelName,
                                               ThreadData->MultiSession,
                                               ThreadData->Timeout);
 
-    if (!Result)
+    if (!result)
     {
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = GlobalReadChannelHeaderData(ThreadData->GlobalSharedMemory,
-                                         &ChannelHeader);
+    result = GlobalReadChannelHeaderData(ThreadData->GlobalSharedMemory,
+                                         &channelHeader);
 
-    if (!Result)
+    if (!result)
     {
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
+    messageSize = 0;
+    answerSize = 0;
 
-    if (!Result)
+    if (channelHeader.HasMessage)
     {
+        messageSize = channelHeader.MessageSize;
+    }
+
+    if (channelHeader.HasAnswer)
+    {
+        answerSize = channelHeader.AnswerSize;
+    }
+
+    localChannelSize = MAX(messageSize, answerSize);
+
+    if (localChannelSize == 0)
+    {
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    LocalChannelSize = MAX(ChannelHeader.MessageSize, ChannelHeader.AnswerSize);
-
-    Result = LocalCreateChannel(ChannelHeader.LocalChannelName,
+    result = LocalCreateChannel(channelHeader.LocalChannelName,
                                 ThreadData->MultiSession,
-                                LocalChannelSize,
-                                &LocalSharedMemory);
+                                localChannelSize,
+                                &localSharedMemory);
 
-    if (!Result)
+    if (!result)
     {
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = LocalCreateChannelMessageEvent(ChannelHeader.LocalChannelName,
+
+
+    result = LocalCreateChannelMessageEvent(channelHeader.LocalChannelName,
                                             ThreadData->MultiSession,
-                                            &LocalChannelMessageEvent);
+                                            &localChannelMessageEvent);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
+        LocalDestroyChannel(localSharedMemory);
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = LocalCreateChannelAnswerEvent(ChannelHeader.LocalChannelName,
+
+    result = LocalCreateChannelAnswerEvent(channelHeader.LocalChannelName,
                                            ThreadData->MultiSession,
-                                           &LocalChannelAnswerEvent);
+                                           &localChannelAnswerEvent);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = LocalCreateChannelReadyEvent(ChannelHeader.LocalChannelName,
+
+
+    result = LocalCreateChannelReadyEvent(channelHeader.LocalChannelName,
                                           ThreadData->MultiSession,
-                                          &LocalChannelReadyEvent);
+                                          &localChannelReadyEvent);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = GlobalSetLocalChannelReadyEvent(ThreadData->GlobalLocalChannelReadyEvent);
+    result = GlobalSetLocalChannelReadyEvent(ThreadData->GlobalLocalChannelReadyEvent);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-        LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    Result = LocalWaitChannelMessageEvent(LocalChannelMessageEvent,
+    result = LocalWaitChannelMessageEvent(localChannelMessageEvent,
                                           ThreadData->Timeout);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-        LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
+        GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
         return FALSE;
     }
 
-    MessageSize = ChannelHeader.MessageSize;
-    AnswerSize = ChannelHeader.AnswerSize;
+    result = GlobalSetChannelReadyEvent(ThreadData->GlobalChannelReadyEvent);
 
-    MessageBuf = malloc(MessageSize);
-    AnswerBuf = LocalSharedMemory->MemoryPointer;
-
-    if (!MessageBuf)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-        LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
         return FALSE;
     }
 
-    Result = LocalReadChannelMessage(LocalSharedMemory,
-                                     MessageBuf,
-                                     MessageSize);
+    messageBuffer = malloc(messageSize);
 
-    if (!Result)
+    if (!messageBuffer)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-        LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
-        free(MessageBuf);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
         return FALSE;
     }
+
+    result = LocalReadChannelMessage(localSharedMemory,
+                                     messageBuffer,
+                                     messageSize);
+
+    if (!result)
+    {
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
+        free(messageBuffer);
+        return FALSE;
+    }
+
+    answerBuffer = localSharedMemory->MemoryPointer;
 
     ThreadData->Routine(ThreadData->GlobalChannelName,
-                        MessageBuf,
-                        MessageSize,
-                        AnswerBuf,
-                        AnswerSize);
+                        messageBuffer,
+                        messageSize,
+                        answerBuffer,
+                        answerSize);
 
-    free(MessageBuf);
+    free(messageBuffer);
 
-    Result = LocalSetChannelAnswerEvent(LocalChannelAnswerEvent);
+    result = LocalSetChannelAnswerEvent(localChannelAnswerEvent);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-        LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
         return FALSE;
     }
 
-    Result = LocalWaitChannelReadyEvent(LocalChannelReadyEvent,
+    result = LocalWaitChannelReadyEvent(localChannelReadyEvent,
                                         ThreadData->Timeout);
 
-    if (!Result)
+    if (!result)
     {
-        LocalDestroyChannel(LocalSharedMemory);
-        LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-        LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-        LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
+        LocalDestroyChannel(localSharedMemory);
+        LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+        LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+        LocalDestroyChannelReadyEvent(localChannelReadyEvent);
         return FALSE;
     }
 
-    LocalDestroyChannel(LocalSharedMemory);
-    LocalDestroyChannelMessageEvent(LocalChannelMessageEvent);
-    LocalDestroyChannelAnswerEvent(LocalChannelAnswerEvent);
-    LocalDestroyChannelReadyEvent(LocalChannelReadyEvent);
+    LocalDestroyChannel(localSharedMemory);
+    LocalDestroyChannelMessageEvent(localChannelMessageEvent);
+    LocalDestroyChannelAnswerEvent(localChannelAnswerEvent);
+    LocalDestroyChannelReadyEvent(localChannelReadyEvent);
 
     return TRUE;
 }
@@ -187,27 +221,28 @@ DWORD
 WINAPI
 IpcThreadProc(PTHREAD_DATA td)
 {
-    BOOL Result;
-    THREAD_DATA ThreadData;
+    BOOL result;
+    THREAD_DATA threadData;
 
     if (!td)
     {
         return 1;
     }
 
-    CopyThreadData(&ThreadData, td);
+    CopyThreadData(&threadData, td);
 
     do
     {
-        Result = ThreadLoop(&ThreadData);
-        if (!Result)
+        result = ThreadLoop(&threadData);
+
+        if (!result)
         {
             break;
         }
     }
     while (TRUE);
 
-    if (!Result)
+    if (!result)
     {
         return 1;
     }
@@ -216,151 +251,82 @@ IpcThreadProc(PTHREAD_DATA td)
 }
 
 BOOL
-StartIpcThread(LPCWSTR ChannelName,
-               IPC_ROUTINE Routine,
-               PSHARED_MEMORY GlobalSharedMemory,
-               PEVENT GlobalChannelReadyEvent,
-               PEVENT GlobalChannelSendHeaderEvent,
-               PEVENT GlobalLocalChannelReadyEvent,
-               DWORD Timeout,
-               BOOL MultiSession)
-{
-    HANDLE ThreadHandle;
-    DWORD ThreadId;
-    PTHREAD_DATA ThreadData = (PTHREAD_DATA)malloc(sizeof(THREAD_DATA));
-
-    if (!ThreadData)
-    {
-        return FALSE;
-    }
-
-    wcscpy_s(ThreadData->GlobalChannelName, 0x200, ChannelName);
-    ThreadData->Routine = Routine;
-    ThreadData->GlobalSharedMemory = GlobalSharedMemory;
-    ThreadData->GlobalChannelReadyEvent = GlobalChannelReadyEvent;
-    ThreadData->GlobalChannelSendHeaderEvent = GlobalChannelSendHeaderEvent;
-    ThreadData->GlobalLocalChannelReadyEvent = GlobalLocalChannelReadyEvent;
-    ThreadData->Timeout = Timeout;
-    ThreadData->MultiSession = MultiSession;
-
-    ThreadHandle = CreateThread(NULL,
-                                0,
-                                (LPTHREAD_START_ROUTINE)IpcThreadProc,
-                                ThreadData,
-                                CREATE_SUSPENDED,
-                                &ThreadId);
-
-    ThreadData->ThreadHandle = ThreadHandle;
-    ThreadData->ThreadId = ThreadId;
-
-    if (!ThreadHandle)
-    {
-        free(ThreadData);
-        return FALSE;
-    }
-
-    ResumeThread(ThreadHandle);
-
-    return TRUE;
-}
-
-BOOL
 IpcCreateIpcChannel(LPCWSTR ChannelName,
                     IPC_ROUTINE Routine,
                     BOOL MultiSession,
                     PVOID *ChannelData)
 {
-    BOOL Result;
-    PSHARED_MEMORY GlobalSharedMemory;
-    PEVENT GlobalChannelReadyEvent;
-    PEVENT GlobalChannelSendHeaderEvent;
-    PEVENT GlobalLocalChannelReadyEvent;
-    PCHANNEL_DATA ChannelDataStruct;
+    BOOL result;
+    PSHARED_MEMORY globalSharedMemory;
+    PEVENT globalChannelReadyEvent;
+    PEVENT globalChannelSendHeaderEvent;
+    PEVENT globalLocalChannelReadyEvent;
+    PCHANNEL_DATA channelDataStruct;
+    DWORD numOfThreads = 4;
+    HANDLE *threadHandles;
 
     if (!ChannelName || !Routine || !ChannelData)
     {
         return FALSE;
     }
 
-    Result = GlobalCreateChannel(ChannelName,
-                                 MultiSession,
-                                 sizeof(CHANNEL_HEADER),
-                                 &GlobalSharedMemory);
+    result = SsCreateGlobalObjects(ChannelName,
+                                   MultiSession,
+                                   &globalSharedMemory,
+                                   &globalChannelReadyEvent,
+                                   &globalChannelSendHeaderEvent,
+                                   &globalLocalChannelReadyEvent);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = GlobalCreateChannelReadyEvent(ChannelName,
-                                           MultiSession,
-                                           &GlobalChannelReadyEvent);
+    result = SsCreateThreads(ChannelName,
+                             (LPTHREAD_START_ROUTINE)IpcThreadProc,
+                             Routine,
+                             TRUE,
+                             globalSharedMemory,
+                             globalChannelReadyEvent,
+                             globalChannelSendHeaderEvent,
+                             globalLocalChannelReadyEvent,
+                             INFINITE,
+                             MultiSession,
+                             &threadHandles,
+                             numOfThreads);
 
-    if (!Result)
+    if (!result)
     {
-        GlobalDestroyChannel(GlobalSharedMemory);
-        return FALSE;
-    }
-
-    Result = GlobalCreateChannelSendHeaderEvent(ChannelName,
-                                                MultiSession,
-                                                &GlobalChannelSendHeaderEvent);
-
-    if (!Result)
-    {
-        GlobalDestroyChannel(GlobalSharedMemory);
-        GlobalDestroyChannelReadyEvent(GlobalChannelReadyEvent);
-        return FALSE;
-    }
-
-    Result = GlobalCreateLocalChannelReadyEvent(ChannelName,
-                                                MultiSession,
-                                                &GlobalLocalChannelReadyEvent);
-
-    if (!Result)
-    {
-        GlobalDestroyChannel(GlobalSharedMemory);
-        GlobalDestroyChannelReadyEvent(GlobalChannelReadyEvent);
-        GlobalDestroyChannelSendHeaderEvent(GlobalChannelSendHeaderEvent);
-        return FALSE;
-    }
-
-    ChannelDataStruct = (PCHANNEL_DATA)malloc(sizeof(CHANNEL_DATA));
-
-    if (!ChannelDataStruct)
-    {
-        GlobalDestroyChannel(GlobalSharedMemory);
-        GlobalDestroyChannelReadyEvent(GlobalChannelReadyEvent);
-        GlobalDestroyChannelSendHeaderEvent(GlobalChannelSendHeaderEvent);
-        GlobalDestroyLocalChannelReadyEvent(GlobalLocalChannelReadyEvent);
-        return FALSE;
-    }
-
-    *ChannelData = ChannelDataStruct;
-    ChannelDataStruct->GlobalSharedMemory = GlobalSharedMemory;
-    ChannelDataStruct->GlobalChannelReadyEvent = GlobalChannelReadyEvent;
-    ChannelDataStruct->GlobalChannelSendHeaderEvent = GlobalChannelSendHeaderEvent;
-    ChannelDataStruct->GlobalLocalChannelReadyEvent = GlobalLocalChannelReadyEvent;
-
-    Result = StartIpcThread(ChannelName,
-                            Routine,
-                            GlobalSharedMemory,
-                            GlobalChannelReadyEvent,
-                            GlobalChannelSendHeaderEvent,
-                            GlobalLocalChannelReadyEvent,
-                            INFINITE,
-                            MultiSession);
-
-    if (!Result)
-    {
-        free(ChannelDataStruct);
         *ChannelData = NULL;
-        GlobalDestroyChannel(GlobalSharedMemory);
-        GlobalDestroyChannelReadyEvent(GlobalChannelReadyEvent);
-        GlobalDestroyChannelSendHeaderEvent(GlobalChannelSendHeaderEvent);
-        GlobalDestroyLocalChannelReadyEvent(GlobalLocalChannelReadyEvent);
+        SsDestroyGlobalObjects(globalSharedMemory,
+                               globalChannelReadyEvent,
+                               globalChannelSendHeaderEvent,
+                               globalLocalChannelReadyEvent);
         return FALSE;
     }
+
+    channelDataStruct = (PCHANNEL_DATA)malloc(sizeof(CHANNEL_DATA));
+
+    if (!channelDataStruct)
+    {
+        SsDestroyGlobalObjects(globalSharedMemory,
+                               globalChannelReadyEvent,
+                               globalChannelSendHeaderEvent,
+                               globalLocalChannelReadyEvent);
+        return FALSE;
+    }
+
+    *ChannelData = channelDataStruct;
+
+    SsInitializeChannelData(channelDataStruct,
+                            globalSharedMemory,
+                            globalChannelReadyEvent,
+                            globalChannelSendHeaderEvent,
+                            globalLocalChannelReadyEvent,
+                            numOfThreads,
+                            threadHandles);
+
+    SsResumeThreads(threadHandles, numOfThreads);
 
     return TRUE;
 }
@@ -368,24 +334,27 @@ IpcCreateIpcChannel(LPCWSTR ChannelName,
 BOOL
 IpcDestroyIpcChannel(PVOID ChannelData)
 {
-    BOOL Result;
-    PCHANNEL_DATA ChannelStruct;
+    BOOL result;
+    PCHANNEL_DATA pChannelData;
 
     if (!ChannelData)
     {
         return FALSE;
     }
 
-    ChannelStruct = (PCHANNEL_DATA)ChannelData;
+    pChannelData = (PCHANNEL_DATA)ChannelData;
 
-    Result = GlobalDestroyChannel(ChannelStruct->GlobalSharedMemory);
-    Result = GlobalDestroyChannelReadyEvent(ChannelStruct->GlobalChannelReadyEvent) && Result;
-    Result = GlobalDestroyChannelSendHeaderEvent(ChannelStruct->GlobalChannelSendHeaderEvent) && Result;
-    Result = GlobalDestroyLocalChannelReadyEvent(ChannelStruct->GlobalLocalChannelReadyEvent) && Result;
+    SsDestroyThreads(pChannelData->IpcThreads,
+                     pChannelData->NumOfIpcThreads);
+
+    result = SsDestroyGlobalObjects(pChannelData->GlobalSharedMemory,
+                                    pChannelData->GlobalChannelReadyEvent,
+                                    pChannelData->GlobalChannelSendHeaderEvent,
+                                    pChannelData->GlobalLocalChannelReadyEvent);
 
     free(ChannelData);
 
-    return Result;
+    return result;
 }
 
 VOID
@@ -397,11 +366,11 @@ BuildHeader(PCHANNEL_HEADER ChannelHeader,
             DWORD AnswerSize,
             UINT64 UniqueId)
 {
-    wcscpy_s(ChannelHeader->LocalChannelName, 0x200, LocalChannelName);
-    ChannelHeader->MessageSize = MessageSize;
-    ChannelHeader->AnswerSize = AnswerSize;
+    wcscpy_s(ChannelHeader->LocalChannelName, 0x100, LocalChannelName);
     ChannelHeader->HasMessage = MessageBuf && MessageSize > 0;
     ChannelHeader->HasAnswer = AnswerBuf && AnswerSize > 0;
+    ChannelHeader->MessageSize = ChannelHeader->HasMessage ? MessageSize : 0;
+    ChannelHeader->AnswerSize = ChannelHeader->HasAnswer ? AnswerSize : 0;
     ChannelHeader->UniqueId = UniqueId;
 }
 
@@ -411,12 +380,24 @@ GenerateUniqueLocalChannelName(LPCWSTR ChannelName,
                                SIZE_T LocalChannelNameSize,
                                UINT64 UniqueId)
 {
-    WCHAR UniqueIdString[0x100];
-    _ui64tow_s(UniqueId, UniqueIdString, 0x100, 10);
-    
-    wcscpy_s(LocalChannelName, LocalChannelNameSize, ChannelName);
-    wcscat_s(LocalChannelName, LocalChannelNameSize, IPC_LOCAL_CHANNEL);
-    wcscat_s(LocalChannelName, LocalChannelNameSize, UniqueIdString);
+    WCHAR uniqueIdString[0x100];
+
+    _ui64tow_s(UniqueId,
+               uniqueIdString,
+               0x100,
+               10);
+
+    wcscpy_s(LocalChannelName,
+             LocalChannelNameSize,
+             ChannelName);
+
+    wcscat_s(LocalChannelName,
+             LocalChannelNameSize,
+             IPC_LOCAL_CHANNEL);
+
+    wcscat_s(LocalChannelName,
+             LocalChannelNameSize,
+             uniqueIdString);
 }
 
 BOOL
@@ -428,151 +409,150 @@ IpcSendIpcMessage(LPCWSTR ChannelName,
                   DWORD Timeout,
                   BOOL MultiSession)
 {
-    BOOL Result;
-    SHARED_MEMORY GlobalSharedMemory;
-    CHANNEL_HEADER GlobalChannelHeader;
-    UINT64 UniqueLocalChannelId;
-    WCHAR LocalChannelName[0x200];
-    SHARED_MEMORY LocalSharedMemory;
+    BOOL result;
+    SHARED_MEMORY globalSharedMemory;
+    CHANNEL_HEADER globalChannelHeader;
+    UINT64 uniqueLocalChannelId;
+    WCHAR localChannelName[0x100];
+    SHARED_MEMORY localSharedMemory;
 
-    Result = GlobalWaitChannelReadyEvent(ChannelName,
+    result = GlobalWaitChannelReadyEvent(ChannelName,
                                          MultiSession,
                                          Timeout);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = GlobalOpenChannel(ChannelName,
+    result = GlobalOpenChannel(ChannelName,
                                MultiSession,
-                               &GlobalSharedMemory);
+                               &globalSharedMemory);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = GlobalReadChannelHeaderData(&GlobalSharedMemory,
-                                         &GlobalChannelHeader);
+    result = GlobalReadChannelHeaderData(&globalSharedMemory,
+                                         &globalChannelHeader);
 
-    if (!Result)
+    if (!result)
     {
-        GlobalCloseChannel(&GlobalSharedMemory);
+        GlobalCloseChannel(&globalSharedMemory);
         return FALSE;
     }
 
-    UniqueLocalChannelId = ++GlobalChannelHeader.UniqueId;
+    uniqueLocalChannelId = ++globalChannelHeader.UniqueId;
 
     GenerateUniqueLocalChannelName(ChannelName,
-                                   LocalChannelName,
-                                   0x200,
-                                   UniqueLocalChannelId);
+                                   localChannelName,
+                                   0x100,
+                                   uniqueLocalChannelId);
 
-    BuildHeader(&GlobalChannelHeader,
-                LocalChannelName,
+    BuildHeader(&globalChannelHeader,
+                localChannelName,
                 MessageBuf,
                 MessageSize,
                 AnswerBuf,
                 AnswerSize,
-                UniqueLocalChannelId);
+                uniqueLocalChannelId);
 
-    Result = GlobalWriteChannelHeaderData(&GlobalSharedMemory,
-                                          &GlobalChannelHeader);
+    result = GlobalWriteChannelHeaderData(&globalSharedMemory,
+                                          &globalChannelHeader);
 
-    if (!Result)
+    if (!result)
     {
-        GlobalCloseChannel(&GlobalSharedMemory);
+        GlobalCloseChannel(&globalSharedMemory);
         return FALSE;
     }
 
-    Result = GlobalCloseChannel(&GlobalSharedMemory);
+    result = GlobalCloseChannel(&globalSharedMemory);
 
-    if (!Result)
-    {
-        return FALSE;
-    }
-
-    Result = GlobalSetChannelSendHeaderEvent(ChannelName, MultiSession);
-
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = GlobalWaitLocalChannelReadyEvent(ChannelName,
+    result = GlobalSetChannelSendHeaderEvent(ChannelName, MultiSession);
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    result = GlobalWaitLocalChannelReadyEvent(ChannelName,
                                               MultiSession,
                                               Timeout);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = LocalOpenChannel(LocalChannelName,
+    result = LocalOpenChannel(localChannelName,
                               MultiSession,
-                              &LocalSharedMemory);
+                              &localSharedMemory);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = LocalWriteChannelMessage(&LocalSharedMemory,
+    result = LocalWriteChannelMessage(&localSharedMemory,
                                       MessageBuf,
                                       MessageSize);
 
-    if (!Result)
+    if (!result)
     {
-        LocalCloseChannel(&LocalSharedMemory);
+        LocalCloseChannel(&localSharedMemory);
         return FALSE;
     }
 
-    Result = LocalSetChannelMessageEvent(LocalChannelName,
+    result = LocalSetChannelMessageEvent(localChannelName,
                                          MultiSession);
 
-    if (!Result)
+    if (!result)
     {
-        LocalCloseChannel(&LocalSharedMemory);
+        LocalCloseChannel(&localSharedMemory);
         return FALSE;
     }
 
-    Result = LocalWaitChannelAnswerEvent(LocalChannelName,
+    result = LocalWaitChannelAnswerEvent(localChannelName,
                                          MultiSession,
                                          Timeout);
 
-    if (!Result)
+    if (!result)
     {
-        LocalCloseChannel(&LocalSharedMemory);
+        LocalCloseChannel(&localSharedMemory);
         return FALSE;
     }
 
-    Result = LocalReadChannelAnswer(&LocalSharedMemory,
+    result = LocalReadChannelAnswer(&localSharedMemory,
                                     AnswerBuf,
                                     AnswerSize);
 
-    if (!Result)
+    if (!result)
     {
-        LocalCloseChannel(&LocalSharedMemory);
+        LocalCloseChannel(&localSharedMemory);
         return FALSE;
     }
 
-    Result = LocalSetChannelReadyEvent(LocalChannelName,
+    result = LocalSetChannelReadyEvent(localChannelName,
                                        MultiSession);
 
-    if (!Result)
+    if (!result)
     {
-        LocalCloseChannel(&LocalSharedMemory);
+        LocalCloseChannel(&localSharedMemory);
         return FALSE;
     }
 
-    Result = LocalCloseChannel(&LocalSharedMemory);
+    result = LocalCloseChannel(&localSharedMemory);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
     return TRUE;
 }
-

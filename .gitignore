@@ -4,7 +4,8 @@
 *.opensdf
 *.userprefs
 
-[Dd]ebug/
-[Rr]elease/
-x64/
-x86/
+/[Bb]in/
+/[Dd]ebug/
+/[Rr]elease/
+/[Xx]64/
+/[Xx]86/

@@ -5,106 +5,216 @@ typedef struct _InjectMessage
 {
     BYTE MessageId;
     DWORD ProcessId;
-    WCHAR DllFileName[MAX_PATH];
+    DWORD Timeout;
+    BOOL IsProcessInitialized;
+    WCHAR DllFileName32[MAX_PATH];
+    WCHAR DllFileName64[MAX_PATH];
 } InjectMessage, *PInjectMessage;
 #pragma pack(pop)
 
-BOOL SendInjectMessage32(LPCWSTR DllFileName,
-                         DWORD ProcessId)
+#pragma pack(push, 1)
+typedef struct _UninjectMessage
 {
-    BOOL Result;
-    BOOL RetValue;
-    InjectMessage msg;
+    BYTE MessageId;
+    DWORD ProcessId;
+    DWORD Timeout;
+    BOOL IsProcessInitialized;
+    WCHAR ModuleName32[MAX_PATH];
+    WCHAR ModuleName64[MAX_PATH];
+} UninjectMessage, *PUninjectMessage;
+#pragma pack(pop)
 
-    msg.MessageId = 0x10;
-    wcscpy_s(msg.DllFileName, DllFileName);
-    msg.ProcessId = ProcessId;
+BOOL SendInjectMessage(LPCWSTR DllFileName32,
+                       LPCWSTR DllFileName64,
+                       DWORD ProcessId,
+                       BOOL IsProcessInitialized,
+                       DWORD Timeout)
+{
+    BOOL result;
+    BOOL retValue;
+    InjectMessage messagePacket;
 
-    Result = IpcSendIpcMessage(L"hlsrv_lib_injector32",
-                               &msg,
-                               sizeof(msg),
-                               &RetValue,
-                               sizeof(RetValue),
+    messagePacket.MessageId = MESSAGE_ID_INJECT;
+    wcscpy_s(messagePacket.DllFileName32, DllFileName32);
+    wcscpy_s(messagePacket.DllFileName64, DllFileName64);
+    messagePacket.ProcessId = ProcessId;
+    messagePacket.Timeout = Timeout;
+    messagePacket.IsProcessInitialized = IsProcessInitialized;
+
+    result = IpcSendIpcMessage(L"hlsrv_lib_injector",
+                               &messagePacket,
+                               sizeof(messagePacket),
+                               &retValue,
+                               sizeof(retValue),
                                INFINITE,
                                TRUE);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    return RetValue;
+    return retValue;
 }
 
-BOOL SendInjectMessage64(LPCWSTR DllFileName,
-                         DWORD ProcessId)
+BOOL SendUninjectMessage(LPCWSTR ModuleName32,
+                         LPCWSTR ModuleName64,
+                         DWORD ProcessId,
+                         BOOL IsProcessInitialized,
+                         DWORD Timeout)
 {
-    BOOL Result;
-    BOOL RetValue;
-    InjectMessage msg;
+    BOOL result;
+    BOOL retValue;
+    UninjectMessage messagePacket;
 
-    msg.MessageId = 0x10;
-    wcscpy_s(msg.DllFileName, DllFileName);
-    msg.ProcessId = ProcessId;
+    messagePacket.MessageId = MESSAGE_ID_UNINJECT;
+    wcscpy_s(messagePacket.ModuleName32, ModuleName32);
+    wcscpy_s(messagePacket.ModuleName64, ModuleName64);
+    messagePacket.ProcessId = ProcessId;
+    messagePacket.Timeout = Timeout;
+    messagePacket.IsProcessInitialized = IsProcessInitialized;
 
-    Result = IpcSendIpcMessage(L"hlsrv_lib_injector64",
-                               &msg,
-                               sizeof(msg),
-                               &RetValue,
-                               sizeof(RetValue),
+    result = IpcSendIpcMessage(L"hlsrv_lib_injector",
+                               &messagePacket,
+                               sizeof(messagePacket),
+                               &retValue,
+                               sizeof(retValue),
                                INFINITE,
                                TRUE);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    return RetValue;
+    return retValue;
 }
 
 BOOL
 IlInjectLibrary(LPCWSTR DllFileName32,
                 LPCWSTR DllFileName64,
                 DWORD ProcessId,
+                HANDLE ProcessHandle,
+                BOOL IsProcessInitialized,
                 DWORD Timeout)
 {
-    BOOL Result;
-    BOOL IsX64System;
-    BOOL IsX64Process;
+    if (!ProcessId)
+    {
+        ProcessId = PsProcessHandleToId(ProcessHandle);
+    }
 
-    IsX64System = IlIsX64System();
-
-    Result = IlIsX64Process(ProcessId, &IsX64Process);
-
-    if (!Result)
+    if (!ProcessId)
     {
         return FALSE;
     }
 
-    // 32-bit OS
-    if (!IsX64System)
-    {
-        return SendInjectMessage32(DllFileName32,
-                                   ProcessId);
-    }
-
-    // 64-bit OS
-    // 64-bit process
-    if (IsX64Process)
-    {
-        return SendInjectMessage64(DllFileName64,
-                                   ProcessId);
-    }
-
-    return SendInjectMessage32(DllFileName32,
-                               ProcessId);
+    return SendInjectMessage(DllFileName32,
+                             DllFileName64,
+                             ProcessId,
+                             IsProcessInitialized,
+                             Timeout);
 }
 
 BOOL
-IlUninjectLibrary(LPCWSTR DllFileName,
+IlUninjectLibrary(LPCWSTR ModuleName32,
+                  LPCWSTR ModuleName64,
                   DWORD ProcessId,
+                  HANDLE ProcessHandle,
+                  BOOL IsProcessInitialized,
                   DWORD Timeout)
 {
-    return FALSE;
+    if (!ProcessId)
+    {
+        ProcessId = PsProcessHandleToId(ProcessHandle);
+    }
+
+    if (!ProcessId)
+    {
+        return FALSE;
+    }
+
+    return SendUninjectMessage(ModuleName32,
+                               ModuleName64,
+                               ProcessId,
+                               IsProcessInitialized,
+                               Timeout);
 }
+
+BOOL
+IlInjectLibraryToAllProcesses(LPCWSTR DllFileName32,
+                              LPCWSTR DllFileName64,
+                              DWORD Timeout)
+{
+    BOOL result;
+    PROCESS_INFO *processes;
+    SIZE_T numOfProcesses;
+
+    processes = (PROCESS_INFO*)malloc(sizeof(PROCESS_INFO) * 0x1000);
+
+    if (!processes)
+    {
+        return FALSE;
+    }
+
+    result = PsGetProcesses(processes, 0x1000, &numOfProcesses);
+
+    if (!result)
+    {
+        free(processes);
+        return FALSE;
+    }
+
+    for (DWORD i = 0; i < numOfProcesses; ++i)
+    {
+        IlInjectLibrary(DllFileName32,
+                        DllFileName64,
+                        processes[i].ProcessId,
+                        NULL,
+                        TRUE,
+                        Timeout);
+    }
+
+    free(processes);
+
+    return TRUE;
+}
+
+BOOL
+IlUninjectLibraryFromAllProcesses(LPCWSTR ModuleName32,
+                                  LPCWSTR ModuleName64,
+                                  DWORD Timeout)
+{
+    BOOL result;
+    PROCESS_INFO *processes;
+    SIZE_T numOfProcesses;
+
+    processes = (PROCESS_INFO*)malloc(sizeof(PROCESS_INFO) * 0x1000);
+
+    if (!processes)
+    {
+        return FALSE;
+    }
+
+    result = PsGetProcesses(processes, 0x1000, &numOfProcesses);
+
+    if (!result)
+    {
+        free(processes);
+        return FALSE;
+    }
+
+    for (DWORD i = 0; i < numOfProcesses; ++i)
+    {
+        IlUninjectLibrary(ModuleName32,
+                          ModuleName64,
+                          processes[i].ProcessId,
+                          NULL,
+                          TRUE,
+                          Timeout);
+    }
+
+    free(processes);
+
+    return TRUE;
+}
+

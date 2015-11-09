@@ -6,19 +6,20 @@
 #include "ipc_event.h"
 #include "ipc_shared_memory.h"
 #include "ipc_types.h"
+#include "ipc_utils.h"
 
 #define IPC_GLOBAL_CHANNEL_READY_EVENT L"__GLBL_CH_RDY_EVNT"
 #define IPC_GLOBAL_CHANNEL L"__GLBL_CH"
 #define IPC_GLOBAL_CHANNEL_HEADER_SEND_EVENT L"__GLBL_CH_HDR_SND_EVNT"
 #define IPC_GLOBAL_LOCAL_CHANNEL_READY_EVENT L"__GLBL_LOC_CH_RDY_EVNT"
 
-// channel
+// channel functions
 
 BOOL
 GlobalCreateChannel(
     LPCWSTR ChannelName,
     BOOL GlobalObject,
-    SIZE_T Size,
+    DWORD Size,
     PSHARED_MEMORY *SharedMemory
 );
 
@@ -39,7 +40,7 @@ GlobalCloseChannel(
     PSHARED_MEMORY SharedMemory
 );
 
-// header read / write
+// header read / write functions
 
 BOOL
 GlobalReadChannelHeaderData(
@@ -53,7 +54,7 @@ GlobalWriteChannelHeaderData(
     PCHANNEL_HEADER ChannelHeader
 );
 
-// header event
+// header event functions
 
 BOOL
 GlobalCreateChannelSendHeaderEvent(
@@ -80,7 +81,7 @@ GlobalWaitChannelSendHeaderEvent(
     DWORD Timeout
 );
 
-// channel ready event
+// channel ready event functions
 
 BOOL
 GlobalCreateChannelReadyEvent(
@@ -100,13 +101,20 @@ GlobalSetChannelReadyEvent(
 );
 
 BOOL
+GlobalSetChannelReadyEvent2(
+    LPCWSTR ChannelName,
+    BOOL GlobalObject,
+    DWORD Timeout
+);
+
+BOOL
 GlobalWaitChannelReadyEvent(
     LPCWSTR ChannelName,
     BOOL GlobalObject,
     DWORD Timeout
 );
 
-// local channel ready event
+// local channel ready event functions
 
 BOOL
 GlobalCreateLocalChannelReadyEvent(

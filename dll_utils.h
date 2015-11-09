@@ -4,12 +4,13 @@
 #include <Windows.h>
 
 BOOL
-EnableDebugPrivilege(BOOL Enable);
+EnableDebugPrivilege(
+    BOOL Enable
+);
 
 BOOL
-EnableCreateGlobalPrivilege(BOOL Enable);
-
-DWORD
-PsProcessHandleToId(HANDLE ProcessHandle);
+EnableCreateGlobalPrivilege(
+    BOOL Enable
+);
 
 #endif

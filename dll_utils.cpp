@@ -3,118 +3,83 @@
 BOOL
 EnableDebugPrivilege(BOOL Enable)
 {
-    BOOL Result;
-    HANDLE TokenHandle;
-    LUID Luid;
-    TOKEN_PRIVILEGES TokenPriv;
+    BOOL result;
+    HANDLE tokenHandle;
+    LUID luid;
+    TOKEN_PRIVILEGES tokenPrivileges;
 
-    Result = OpenProcessToken(GetCurrentProcess(),
+    result = OpenProcessToken(GetCurrentProcess(),
                               TOKEN_ADJUST_PRIVILEGES,
-                              &TokenHandle);
+                              &tokenHandle);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &Luid);
+    result = LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid);
 
-    if (!Result)
+    if (!result)
     {
-        CloseHandle(TokenHandle);
+        CloseHandle(tokenHandle);
         return FALSE;
     }
 
-    TokenPriv.PrivilegeCount = 1;
-    TokenPriv.Privileges[0].Luid = Luid;
-    TokenPriv.Privileges[0].Attributes = Enable ? SE_PRIVILEGE_ENABLED : 0;
+    tokenPrivileges.PrivilegeCount = 1;
+    tokenPrivileges.Privileges[0].Luid = luid;
+    tokenPrivileges.Privileges[0].Attributes = Enable ? SE_PRIVILEGE_ENABLED : 0;
 
-    Result = AdjustTokenPrivileges(TokenHandle,
+    result = AdjustTokenPrivileges(tokenHandle,
                                    FALSE,
-                                   &TokenPriv,
+                                   &tokenPrivileges,
                                    0,
                                    NULL,
                                    NULL);
 
-    Result &= GetLastError() == ERROR_SUCCESS;
+    result &= GetLastError() == ERROR_SUCCESS;
 
-    CloseHandle(TokenHandle);
-    return Result;
+    CloseHandle(tokenHandle);
+    return result;
 }
 
 BOOL
 EnableCreateGlobalPrivilege(BOOL Enable)
 {
-    BOOL Result;
-    HANDLE TokenHandle;
-    LUID Luid;
-    TOKEN_PRIVILEGES TokenPriv;
+    BOOL result;
+    HANDLE tokenHandle;
+    LUID luid;
+    TOKEN_PRIVILEGES tokenPrivileges;
 
-    Result = OpenProcessToken(GetCurrentProcess(),
+    result = OpenProcessToken(GetCurrentProcess(),
                               TOKEN_ADJUST_PRIVILEGES,
-                              &TokenHandle);
+                              &tokenHandle);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = LookupPrivilegeValue(NULL, SE_CREATE_GLOBAL_NAME, &Luid);
+    result = LookupPrivilegeValue(NULL, SE_CREATE_GLOBAL_NAME, &luid);
 
-    if (!Result)
+    if (!result)
     {
-        CloseHandle(TokenHandle);
+        CloseHandle(tokenHandle);
         return FALSE;
     }
 
-    TokenPriv.PrivilegeCount = 1;
-    TokenPriv.Privileges[0].Luid = Luid;
-    TokenPriv.Privileges[0].Attributes = Enable ? SE_PRIVILEGE_ENABLED : 0;
+    tokenPrivileges.PrivilegeCount = 1;
+    tokenPrivileges.Privileges[0].Luid = luid;
+    tokenPrivileges.Privileges[0].Attributes = Enable ? SE_PRIVILEGE_ENABLED : 0;
 
-    Result = AdjustTokenPrivileges(TokenHandle,
+    result = AdjustTokenPrivileges(tokenHandle,
                                    FALSE,
-                                   &TokenPriv,
+                                   &tokenPrivileges,
                                    0,
                                    NULL,
                                    NULL);
 
-    Result &= GetLastError() == ERROR_SUCCESS;
+    result &= GetLastError() == ERROR_SUCCESS;
 
-    CloseHandle(TokenHandle);
-    return Result;
-}
-
-DWORD
-PsProcessHandleToId(HANDLE ProcessHandle)
-{
-    BOOL Result;
-    HANDLE Process;
-    HANDLE TargetHandle;
-    DWORD ProcessId;
-
-    if (ProcessHandle == GetCurrentProcess())
-    {
-        return GetCurrentProcessId();
-    }
-
-    Process = GetCurrentProcess();
-
-    Result = DuplicateHandle(Process,
-                             ProcessHandle,
-                             Process,
-                             &TargetHandle,
-                             PROCESS_QUERY_INFORMATION,
-                             FALSE,
-                             0);
-
-    if (!Result)
-    {
-        return 0;
-    }
-
-    ProcessId = GetProcessId(TargetHandle);
-
-    CloseHandle(TargetHandle);
-
-    return ProcessId;
+    CloseHandle(tokenHandle);
+    return result;
 }

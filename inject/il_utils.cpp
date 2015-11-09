@@ -1,118 +1,6 @@
 #include "il_utils.h"
 
 BOOL
-IlIsX64System()
-{
-#ifndef _M_X64
-    HMODULE ModuleHandle;
-    GET_NATIVE_SYSTEM_INFO GetNativeSystemInfo;
-    SYSTEM_INFO SysInfo;
-
-    ModuleHandle = GetModuleHandleW(L"kernel32");
-
-    if (ModuleHandle == NULL)
-    {
-        return FALSE;
-    }
-
-    GetNativeSystemInfo = (GET_NATIVE_SYSTEM_INFO)GetProcAddress(ModuleHandle, "GetNativeSystemInfo");
-
-    if (GetNativeSystemInfo == NULL)
-    {
-        return FALSE;
-    }
-
-    GetNativeSystemInfo(&SysInfo);
-
-    if (SysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
-    {
-        return FALSE;
-    }
-
-#endif
-    return TRUE;
-}
-
-BOOL
-IlIsX64Process(DWORD ProcessId,
-               PBOOL Result)
-{
-    HMODULE ModuleHandle;
-    BOOL IsTarget64Bit = FALSE;
-    HANDLE ProcessHandle = NULL;
-    IS_WOW64_PROCESS IsWow64ProcessProc;
-
-    if (!Result)
-    {
-        return FALSE;
-    }
-
-#ifndef _M_X64
-    GET_NATIVE_SYSTEM_INFO GetNativeSystemInfoProc;
-    SYSTEM_INFO SysInfo;
-#endif
-
-    ModuleHandle = GetModuleHandleW(L"kernel32");
-
-    if (ModuleHandle == NULL)
-    {
-        return FALSE;
-    }
-
-    ProcessHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, ProcessId);
-
-    if (ProcessHandle == NULL)
-    {
-        return FALSE;
-    }
-
-    IsWow64ProcessProc = (IS_WOW64_PROCESS)GetProcAddress(ModuleHandle, "IsWow64Process");
-
-#ifdef _M_X64
-    if (!IsWow64ProcessProc(ProcessHandle, &IsTarget64Bit))
-    {
-        CloseHandle(ProcessHandle);
-        return FALSE;
-    }
-
-    IsTarget64Bit = !IsTarget64Bit;
-#else
-    IsTarget64Bit = FALSE;
-
-    if (IsWow64ProcessProc == NULL)
-    {
-        CloseHandle(ProcessHandle);
-        return FALSE;
-    }
-
-    GetNativeSystemInfoProc =
-        (GET_NATIVE_SYSTEM_INFO)GetProcAddress(ModuleHandle, "GetNativeSystemInfo");
-
-    if (GetNativeSystemInfoProc == NULL)
-    {
-        CloseHandle(ProcessHandle);
-        return FALSE;
-    }
-
-    GetNativeSystemInfoProc(&SysInfo);
-
-    if (SysInfo.wProcessorArchitecture != PROCESSOR_ARCHITECTURE_INTEL)
-    {
-        if (!IsWow64ProcessProc(ProcessHandle, &IsTarget64Bit))
-        {
-            CloseHandle(ProcessHandle);
-            return FALSE;
-        }
-        IsTarget64Bit = !IsTarget64Bit;
-    }
-#endif
-
-    *Result = IsTarget64Bit;
-    CloseHandle(ProcessHandle);
-    return TRUE;
-}
-
-BOOL
 IlAllocate(HANDLE ProcessHandle,
            SIZE_T Size,
            DWORD Protect,
@@ -143,15 +31,15 @@ IlWrite(HANDLE ProcessHandle,
         LPVOID Buffer,
         SIZE_T Size)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = WriteProcessMemory(ProcessHandle,
+    result = WriteProcessMemory(ProcessHandle,
                                 Address,
                                 Buffer,
                                 Size,
                                 NULL);
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -160,15 +48,15 @@ IlRead(HANDLE ProcessHandle,
        LPVOID Buffer,
        SIZE_T Size)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = ReadProcessMemory(ProcessHandle,
+    result = ReadProcessMemory(ProcessHandle,
                                Address,
                                Buffer,
                                Size,
                                NULL);
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -178,23 +66,30 @@ IlAllocateAndWrite(HANDLE ProcessHandle,
                    DWORD Protect,
                    LPVOID *Address)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = IlAllocate(ProcessHandle, Size, Protect, Address);
+    result = IlAllocate(ProcessHandle,
+                        Size,
+                        Protect,
+                        Address);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = IlWrite(ProcessHandle, *Address, Buffer, Size);
+    result = IlWrite(ProcessHandle,
+                     *Address,
+                     Buffer,
+                     Size);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, *Address);
+        IlDeallocate(ProcessHandle,
+                     *Address);
     }
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -205,7 +100,11 @@ IlDeallocate(HANDLE ProcessHandle,
     {
         return FALSE;
     }
-    return VirtualFreeEx(ProcessHandle, Address, 0, MEM_RELEASE);
+
+    return VirtualFreeEx(ProcessHandle,
+                         Address,
+                         0,
+                         MEM_RELEASE);
 }
 
 BOOL
@@ -213,15 +112,15 @@ IlAllocateWideString(HANDLE ProcessHandle,
                      LPCWSTR String,
                      LPVOID *WideStringAddress)
 {
-    SIZE_T StringLen;
-    SIZE_T StringSize;
+    SIZE_T stringLen;
+    SIZE_T stringSize;
 
-    StringLen = wcslen(String);
-    StringSize = sizeof(WCHAR) * (StringLen + 1);
+    stringLen = wcslen(String);
+    stringSize = sizeof(WCHAR) * (stringLen + 1);
 
     return IlAllocateAndWrite(ProcessHandle,
                               (LPVOID)String,
-                              StringSize,
+                              stringSize,
                               PAGE_READWRITE,
                               WideStringAddress);
 }
@@ -232,83 +131,161 @@ IlAllocateUnicodeString(HANDLE ProcessHandle,
                         LPCWSTR WideString,
                         LPVOID *UnicodeStringAddress)
 {
-    BOOL Result;
-    LPVOID AllocDllFileName;
-    UNICODE_STRING UnicodeTemplate;
+    BOOL result;
+    LPVOID allocatedDllFileName;
+    NT_UNICODE_STRING unicodeTemplate;
 
-    Result = IlAllocateWideString(ProcessHandle,
+    result = IlAllocateWideString(ProcessHandle,
                                   WideString,
-                                  &AllocDllFileName);
+                                  &allocatedDllFileName);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = IlAllocate(ProcessHandle,
-                        sizeof(UNICODE_STRING),
+    result = IlAllocate(ProcessHandle,
+                        sizeof(NT_UNICODE_STRING),
                         PAGE_READWRITE,
                         UnicodeStringAddress);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, AllocDllFileName);
+        IlDeallocate(ProcessHandle, allocatedDllFileName);
         return FALSE;
     }
 
-    UnicodeTemplate.Buffer = (LPWSTR)AllocDllFileName;
-    UnicodeTemplate.Length = (USHORT)wcslen(WideString) * 2;
-    UnicodeTemplate.MaximumLength = UnicodeTemplate.Length + 2;
+    unicodeTemplate.Buffer = (LPWSTR)allocatedDllFileName;
+    unicodeTemplate.Length = (USHORT)wcslen(WideString) * 2;
+    unicodeTemplate.MaximumLength = unicodeTemplate.Length + 2;
 
-    Result = IlWrite(ProcessHandle,
+    result = IlWrite(ProcessHandle,
                      *UnicodeStringAddress,
-                     &UnicodeTemplate,
-                     sizeof(UNICODE_STRING));
+                     &unicodeTemplate,
+                     sizeof(NT_UNICODE_STRING));
 
-    return Result;
+    return result;
+}
+
+BOOL
+IlAllocateUnicodeString32(HANDLE ProcessHandle,
+                          LPCWSTR WideString,
+                          LPVOID *UnicodeStringAddress)
+{
+    BOOL result;
+    LPVOID allocatedDllFileName;
+    NT_UNICODE_STRING32 unicodeTemplate;
+
+    result = IlAllocateWideString(ProcessHandle,
+                                  WideString,
+                                  &allocatedDllFileName);
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    result = IlAllocate(ProcessHandle,
+                        sizeof(NT_UNICODE_STRING32),
+                        PAGE_READWRITE,
+                        UnicodeStringAddress);
+
+    if (!result)
+    {
+        IlDeallocate(ProcessHandle, allocatedDllFileName);
+        return FALSE;
+    }
+
+    unicodeTemplate.Buffer = (WOW64_PTR(LPWSTR)) allocatedDllFileName;
+    unicodeTemplate.Length = (USHORT)wcslen(WideString) * 2;
+    unicodeTemplate.MaximumLength = unicodeTemplate.Length + 2;
+
+    result = IlWrite(ProcessHandle,
+                     *UnicodeStringAddress,
+                     &unicodeTemplate,
+                     sizeof(NT_UNICODE_STRING32));
+
+    return result;
 }
 
 BOOL
 IlDeallocateUnicodeString(HANDLE ProcessHandle,
                           LPVOID UnicodeStringAddress)
 {
-    BOOL Result;
+    BOOL result;
 
-    UNICODE_STRING UnicodeTemplate;
+    NT_UNICODE_STRING unicodeTemplate;
 
-    Result = IlRead(ProcessHandle,
+    result = IlRead(ProcessHandle,
                     UnicodeStringAddress,
-                    &UnicodeTemplate,
-                    sizeof(UNICODE_STRING));
+                    &unicodeTemplate,
+                    sizeof(NT_UNICODE_STRING));
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = IlDeallocate(ProcessHandle, UnicodeStringAddress);
-    Result = IlDeallocate(ProcessHandle, UnicodeTemplate.Buffer) && Result;
+    result = IlDeallocate(ProcessHandle, UnicodeStringAddress);
+    result = IlDeallocate(ProcessHandle, unicodeTemplate.Buffer) && result;
     
-    return Result;
+    return result;
+}
+
+BOOL
+IlDeallocateUnicodeString32(HANDLE ProcessHandle,
+                            LPVOID UnicodeStringAddress)
+{
+    BOOL result;
+
+    NT_UNICODE_STRING32 unicodeTemplate;
+
+    result = IlRead(ProcessHandle,
+                    UnicodeStringAddress,
+                    &unicodeTemplate,
+                    sizeof(NT_UNICODE_STRING32));
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    result = IlDeallocate(ProcessHandle, UnicodeStringAddress);
+    result = IlDeallocate(ProcessHandle, (LPVOID)(unicodeTemplate.Buffer)) && result;
+
+    return result;
 }
 
 LPVOID
-GetModuleProcAddress(LPCWSTR ModuleName,
-                     LPCSTR ProcName)
+IlGetRemoteModuleProcAddress(HANDLE ProcessHandle,
+                             BOOL IsProcessInitialized,
+                             BOOL IsModule32,
+                             LPCWSTR ModuleName,
+                             LPCSTR ProcName)
 {
-    HMODULE ModuleHandle;
+    BOOL result;
+    MODULE_INFO moduleInfo;
+    LPVOID procAddress;
 
     if (!ModuleName || !ProcName)
     {
         return NULL;
     }
 
-    ModuleHandle = GetModuleHandle(ModuleName);
+    result = PsGetModuleInfo(ProcessHandle,
+                             IsProcessInitialized,
+                             IsModule32,
+                             ModuleName,
+                             &moduleInfo);
 
-    if (!ModuleHandle)
+    if (!result)
     {
-        return NULL;
+        return FALSE;
     }
 
-    return GetProcAddress(ModuleHandle, ProcName);
+    procAddress = PsGetRemoteProcAddress(ProcessHandle,
+                                         moduleInfo.ModuleHandle,
+                                         ProcName);
+
+    return procAddress;
 }

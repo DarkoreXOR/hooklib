@@ -1,301 +1,464 @@
 #include "il_utils_x64.h"
 
 BOOL
-GenerateLdrLoadDllCall64(HANDLE ProcessHandle,
-                         PVOID RemoteCode,
-                         PVOID LdrLoadDllProc,
-                         PVOID RemotePathToFile,
-                         PVOID RemoteFlags,
-                         PVOID RemoteModuleFileName,
-                         PVOID RemoteModuleHandle,
-                         PVOID RemoteReturnValue)
+MakeLdrLoadDllCall64(HANDLE ProcessHandle,
+                     PVOID RemoteCode,
+                     PVOID LdrLoadDllProc,
+                     PVOID RemotePathToFile,
+                     PVOID RemoteFlags,
+                     PVOID RemoteModuleFileName,
+                     PVOID RemoteModuleHandle,
+                     PVOID RemoteReturnValue)
 {
     using namespace asmjit;
-    BOOL Result;
+    BOOL result;
     JitRuntime runtime;
-    X86Assembler a(&runtime);
-    X86Mem ReturnVarPtr;
-    PVOID CodePtr;
-    PVOID LocalCodePtr;
+    X86Assembler a(&runtime, kArchX64);
+    PVOID codeBase;
 
-    a.sub(host::rsp, 0x28);
-    a.mov(host::rcx, (uint64_t)RemotePathToFile);
-    a.mov(host::rdx, (uint64_t)RemoteFlags);
-    a.mov(host::r8, (uint64_t)RemoteModuleFileName);
-    a.mov(host::r9, (uint64_t)RemoteModuleHandle);
-    a.mov(host::rax, (uint64_t)LdrLoadDllProc);
-    a.call(host::rax);
-    a.mov(host::rbx, (uint64_t)RemoteReturnValue);
-    a.mov(X86Mem(host::rbx, 0), host::rax);
-    a.add(host::rsp, 0x28);
+    a.sub(x86::rsp, 0x28);
+    a.mov(x86::rcx, (uint64_t)RemotePathToFile);
+    a.mov(x86::rdx, (uint64_t)RemoteFlags);
+    a.mov(x86::r8, (uint64_t)RemoteModuleFileName);
+    a.mov(x86::r9, (uint64_t)RemoteModuleHandle);
+    a.mov(x86::rax, (uint64_t)LdrLoadDllProc);
+    a.call(x86::rax);
+    a.mov(x86::rbx, (uint64_t)RemoteReturnValue);
+    a.mov(x86::qword_ptr(x86::rbx), x86::rax);
+    a.add(x86::rsp, 0x28);
     a.ret();
 
-    CodePtr = a.make();
+    codeBase = a.make();
 
-    if (!CodePtr)
+    if (!codeBase)
     {
         return FALSE;
     }
 
-    LocalCodePtr = malloc(a.getCodeSize());
-
-    if (!LocalCodePtr)
-    {
-        runtime.release(CodePtr);
-        return FALSE;
-    }
-
-    CopyMemory(LocalCodePtr, CodePtr, a.getCodeSize());
-
-    a.relocCode(LocalCodePtr, Ptr(RemoteCode));
-
-    Result = IlWrite(ProcessHandle,
+    result = IlWrite(ProcessHandle,
                      RemoteCode,
-                     LocalCodePtr,
+                     codeBase,
                      a.getCodeSize());
 
+    runtime.release(codeBase);
 
-    free(LocalCodePtr);
-    runtime.release(CodePtr);
-
-    return Result;
+    return result;
 }
 
 NTSTATUS
 LdrLoadDllEx64(HANDLE ProcessHandle,
+               BOOL IsProcessInitialized,
                PWCHAR PathToFile,
                ULONG Flags,
-               PUNICODE_STRING ModuleFileName,
-               HMODULE *ModuleHandle)
+               PNT_UNICODE_STRING ModuleFileName,
+               HMODULE *ModuleHandle,
+               DWORD Timeout)
 {
-    BOOL Result;
-    LPVOID LdrLoadDllProc;
+    BOOL result;
+    LPVOID ldrLoadDllProc;
     // handle
-    HANDLE ThreadHandle;
+    HANDLE threadHandle;
     // remote args
-    LPVOID RemoteCode;
-    LPVOID RemotePathToFile = NULL;
-    LPVOID RemoteFlags = NULL;
-    LPVOID RemoteModuleFileName = NULL;
-    LPVOID RemoteModuleHandle = NULL;
+    LPVOID remoteCode;
+    LPVOID remotePathToFile = NULL;
+    LPVOID remoteFlags = NULL;
+    LPVOID remoteModuleFileName = NULL;
+    LPVOID remoteModuleHandle = NULL;
     // return
-    LPVOID RemoteReturnValue;
-    NTSTATUS ReturnValue;
+    LPVOID remoteReturnValue;
+    NTSTATUS returnValue;
 
-    LdrLoadDllProc = GetModuleProcAddress(L"ntdll", "LdrLoadDll");
+    ldrLoadDllProc = IlGetRemoteModuleProcAddress(ProcessHandle,
+                                                  IsProcessInitialized,
+                                                  FALSE,
+                                                  L"ntdll.dll",
+                                                  "LdrLoadDll");
 
-    if (!LdrLoadDllProc)
+    if (!ldrLoadDllProc)
     {
         return STATUS_UNSUCCESSFUL;
     }
 
     if (PathToFile)
     {
-        // allocate PathToFile
-        Result = IlAllocateWideString(ProcessHandle,
+        result = IlAllocateWideString(ProcessHandle,
                                       PathToFile,
-                                      &RemotePathToFile);
+                                      &remotePathToFile);
 
-        if (!Result)
+        if (!result)
         {
             return STATUS_UNSUCCESSFUL;
         }
     }
 
-    // allocate Flags
-    Result = IlAllocateAndWrite(ProcessHandle,
+    result = IlAllocateAndWrite(ProcessHandle,
                                 &Flags,
                                 sizeof(Flags),
                                 PAGE_READWRITE,
-                                &RemoteFlags);
+                                &remoteFlags);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
+        IlDeallocate(ProcessHandle, remotePathToFile);
         return STATUS_UNSUCCESSFUL;
     }
 
-    // allocate ModuleFileName
-    Result = IlAllocateUnicodeString(ProcessHandle,
+    result = IlAllocateUnicodeString(ProcessHandle,
                                      ModuleFileName->Buffer,
-                                     &RemoteModuleFileName);
+                                     &remoteModuleFileName);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
         return STATUS_UNSUCCESSFUL;
     }
 
-    // allocate ModuleHandle
-    Result = IlAllocate(ProcessHandle,
+    result = IlAllocate(ProcessHandle,
                         sizeof(HMODULE),
                         PAGE_READWRITE,
-                        &RemoteModuleHandle);
+                        &remoteModuleHandle);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
         return STATUS_UNSUCCESSFUL;
     }
 
-    // allocate ReturnValue
-    Result = IlAllocate(ProcessHandle,
+    result = IlAllocate(ProcessHandle,
                         sizeof(NTSTATUS),
                         PAGE_READWRITE,
-                        &RemoteReturnValue);
+                        &remoteReturnValue);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-        IlDeallocate(ProcessHandle, RemoteModuleHandle);
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocate(ProcessHandle, remoteModuleHandle);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    result = IlAllocate(ProcessHandle,
+                        0x1000,
+                        PAGE_EXECUTE_READWRITE,
+                        &remoteCode);
+
+    if (!result)
+    {
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocate(ProcessHandle, remoteModuleHandle);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    result = MakeLdrLoadDllCall64(ProcessHandle,
+                                  remoteCode,
+                                  ldrLoadDllProc,
+                                  remotePathToFile,
+                                  remoteFlags,
+                                  remoteModuleFileName,
+                                  remoteModuleHandle,
+                                  remoteReturnValue);
+
+    threadHandle = ThdNewCreateRemoteThread(ProcessHandle,
+                                            NULL,
+                                            0,
+                                            (LPTHREAD_START_ROUTINE)remoteCode,
+                                            NULL,
+                                            0,
+                                            NULL);
+
+    if (!threadHandle)
+    {
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocate(ProcessHandle, remoteModuleHandle);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    ResumeThread(threadHandle);
+
+    result = WaitForSingleObject(threadHandle, Timeout) == WAIT_OBJECT_0;
+
+    CloseHandle(threadHandle);
+
+    if (!result)
+    {
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocate(ProcessHandle, remoteModuleHandle);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    result = IlRead(ProcessHandle,
+                    remoteModuleHandle,
+                    ModuleHandle,
+                    sizeof(HMODULE));
+
+    if (!result)
+    {
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocate(ProcessHandle, remoteModuleHandle);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    result = IlRead(ProcessHandle,
+                    remoteReturnValue,
+                    &returnValue,
+                    sizeof(returnValue));
+
+    if (!result)
+    {
+        IlDeallocate(ProcessHandle, remotePathToFile);
+        IlDeallocate(ProcessHandle, remoteFlags);
+        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocate(ProcessHandle, remoteModuleHandle);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
+
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    IlDeallocate(ProcessHandle, remotePathToFile);
+    IlDeallocate(ProcessHandle, remoteFlags);
+    IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+    IlDeallocate(ProcessHandle, remoteModuleHandle);
+    IlDeallocate(ProcessHandle, remoteReturnValue);
+    IlDeallocate(ProcessHandle, remoteCode);
+
+    return returnValue;
+}
+
+BOOL
+MakeLdrUnloadDllCall64(HANDLE ProcessHandle,
+                       PVOID RemoteCode,
+                       PVOID LdrUnloadDllProc,
+                       HMODULE RemoteModuleHandle,
+                       PVOID RemoteReturnValue)
+{
+    using namespace asmjit;
+    BOOL result;
+    JitRuntime runtime;
+    X86Assembler a(&runtime, kArchX64);
+    PVOID codeBase;
+
+    a.sub(x86::rsp, 0x28);
+    a.mov(x86::rcx, (uint64_t)RemoteModuleHandle);
+    a.mov(x86::rax, (uint64_t)LdrUnloadDllProc);
+    a.call(x86::rax);
+    a.mov(x86::rbx, (uint64_t)RemoteReturnValue);
+    a.mov(x86::qword_ptr(x86::rbx), x86::rax);
+    a.add(x86::rsp, 0x28);
+    a.ret();
+
+    codeBase = a.make();
+
+    if (!codeBase)
+    {
+        return FALSE;
+    }
+
+    result = IlWrite(ProcessHandle,
+                     RemoteCode,
+                     codeBase,
+                     a.getCodeSize());
+
+    runtime.release(codeBase);
+
+    return result;
+}
+
+NTSTATUS
+LdrUnloadDllEx64(HANDLE ProcessHandle,
+                 BOOL IsProcessInitialized,
+                 HMODULE ModuleHandle,
+                 DWORD Timeout)
+{
+    BOOL result;
+    LPVOID ldrUnloadDllProc;
+    // handle
+    HANDLE threadHandle;
+    // remote args
+    LPVOID remoteCode;
+    HMODULE remoteModuleHandle = NULL;
+    // return
+    LPVOID remoteReturnValue;
+    NTSTATUS returnValue;
+
+    ldrUnloadDllProc = IlGetRemoteModuleProcAddress(ProcessHandle,
+                                                    IsProcessInitialized,
+                                                    FALSE,
+                                                    L"ntdll.dll",
+                                                    "LdrUnloadDll");
+
+    if (!ldrUnloadDllProc)
+    {
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    remoteModuleHandle = ModuleHandle;
+
+    // allocate ReturnValue
+    result = IlAllocate(ProcessHandle,
+                        sizeof(NTSTATUS),
+                        PAGE_READWRITE,
+                        &remoteReturnValue);
+
+    if (!result)
+    {
         return STATUS_UNSUCCESSFUL;
     }
 
     // build code
 
-    Result = IlAllocate(ProcessHandle,
+    result = IlAllocate(ProcessHandle,
                         0x1000,
                         PAGE_EXECUTE_READWRITE,
-                        &RemoteCode);
+                        &remoteCode);
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-        IlDeallocate(ProcessHandle, RemoteModuleHandle);
-        IlDeallocate(ProcessHandle, RemoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
         return STATUS_UNSUCCESSFUL;
     }
 
-    Result = GenerateLdrLoadDllCall64(ProcessHandle,
-                                      RemoteCode,
-                                      LdrLoadDllProc,
-                                      RemotePathToFile,
-                                      RemoteFlags,
-                                      RemoteModuleFileName,
-                                      RemoteModuleHandle,
-                                      RemoteReturnValue);
+    result = MakeLdrUnloadDllCall64(ProcessHandle,
+                                    remoteCode,
+                                    ldrUnloadDllProc,
+                                    remoteModuleHandle,
+                                    remoteReturnValue);
 
-    ThreadHandle = NewCreateRemoteThread(ProcessHandle,
+    threadHandle = ThdNewCreateRemoteThread(ProcessHandle,
                                          NULL,
                                          0,
-                                         (LPTHREAD_START_ROUTINE)RemoteCode,
+                                         (LPTHREAD_START_ROUTINE)remoteCode,
                                          NULL,
                                          0,
                                          NULL);
 
-    if (!ThreadHandle)
+    if (!threadHandle)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-        IlDeallocate(ProcessHandle, RemoteModuleHandle);
-        IlDeallocate(ProcessHandle, RemoteReturnValue);
-        IlDeallocate(ProcessHandle, RemoteCode);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
         return STATUS_UNSUCCESSFUL;
     }
 
-    Result = WaitForSingleObject(ThreadHandle, INFINITE) == WAIT_OBJECT_0;
+    result = ResumeThread(threadHandle) != (DWORD)(-1);
 
-    CloseHandle(ThreadHandle);
-
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-        IlDeallocate(ProcessHandle, RemoteModuleHandle);
-        IlDeallocate(ProcessHandle, RemoteReturnValue);
-        IlDeallocate(ProcessHandle, RemoteCode);
+        TerminateProcess(threadHandle, 1);
+        CloseHandle(threadHandle);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
         return STATUS_UNSUCCESSFUL;
     }
 
-    // read ModuleHandle
-    Result = IlRead(ProcessHandle,
-                    RemoteModuleHandle,
-                    ModuleHandle,
-                    sizeof(HMODULE));
+    result = WaitForSingleObject(threadHandle, Timeout) == WAIT_OBJECT_0;
 
-    if (!Result)
+    CloseHandle(threadHandle);
+
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-        IlDeallocate(ProcessHandle, RemoteModuleHandle);
-        IlDeallocate(ProcessHandle, RemoteReturnValue);
-        IlDeallocate(ProcessHandle, RemoteCode);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
         return STATUS_UNSUCCESSFUL;
     }
 
     // read return value
-    Result = IlRead(ProcessHandle,
-                    RemoteReturnValue,
-                    &ReturnValue,
-                    sizeof(ReturnValue));
+    result = IlRead(ProcessHandle,
+                    remoteReturnValue,
+                    &returnValue,
+                    sizeof(returnValue));
 
-    if (!Result)
+    if (!result)
     {
-        IlDeallocate(ProcessHandle, RemotePathToFile);
-        IlDeallocate(ProcessHandle, RemoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-        IlDeallocate(ProcessHandle, RemoteModuleHandle);
-        IlDeallocate(ProcessHandle, RemoteReturnValue);
-        IlDeallocate(ProcessHandle, RemoteCode);
+        IlDeallocate(ProcessHandle, remoteReturnValue);
+        IlDeallocate(ProcessHandle, remoteCode);
 
         return STATUS_UNSUCCESSFUL;
     }
 
-    IlDeallocate(ProcessHandle, RemotePathToFile);
-    IlDeallocate(ProcessHandle, RemoteFlags);
-    IlDeallocateUnicodeString(ProcessHandle, RemoteModuleFileName);
-    IlDeallocate(ProcessHandle, RemoteModuleHandle);
-    IlDeallocate(ProcessHandle, RemoteReturnValue);
-    IlDeallocate(ProcessHandle, RemoteCode);
+    IlDeallocate(ProcessHandle, remoteReturnValue);
+    IlDeallocate(ProcessHandle, remoteCode);
 
-    return ReturnValue;
+    return returnValue;
 }
-
 
 BOOL
 IlInjectLibrary64(LPCWSTR DllFileName,
-                  DWORD ProcessId,
+                  HANDLE ProcessHandle,
+                  BOOL IsProcessInitialized,
                   DWORD Timeout)
 {
-    DWORD Access = 0;
-    HANDLE ProcessHandle;
-    NTSTATUS Status;
-    UNICODE_STRING UnicodeString;
-    HMODULE ModuleHandle;
-
-    Access |= PROCESS_VM_OPERATION;
-    Access |= PROCESS_VM_READ;
-    Access |= PROCESS_VM_WRITE;
-    Access |= PROCESS_CREATE_THREAD;
-    Access |= SYNCHRONIZE;
-    Access |= PROCESS_QUERY_INFORMATION;
-
-    ProcessHandle = OpenProcess(Access, FALSE, ProcessId);
+    NTSTATUS status;
+    NT_UNICODE_STRING unicodeString;
+    HMODULE moduleHandle;
 
     if (!ProcessHandle)
     {
         return FALSE;
     }
 
-    UnicodeString.Buffer = (PWSTR)DllFileName;
+    unicodeString.Buffer = (PWSTR)DllFileName;
 
-    Status = LdrLoadDllEx64(ProcessHandle,
+    status = LdrLoadDllEx64(ProcessHandle,
+                            IsProcessInitialized,
                             NULL,
                             0,
-                            &UnicodeString,
-                            &ModuleHandle);
+                            &unicodeString,
+                            &moduleHandle,
+                            Timeout);
 
-    CloseHandle(ProcessHandle);
+    return status != STATUS_UNSUCCESSFUL;
+}
 
-    return Status != STATUS_UNSUCCESSFUL;
+BOOL
+IlUninjectLibrary64(LPCWSTR ModuleName,
+                    HANDLE ProcessHandle,
+                    BOOL IsProcessInitialized,
+                    DWORD Timeout)
+{
+    BOOL result;
+    NTSTATUS status;
+    MODULE_INFO moduleInfo;
+
+    if (!ProcessHandle)
+    {
+        return FALSE;
+    }
+
+    result = PsGetModuleInfo(ProcessHandle,
+                             IsProcessInitialized,
+                             FALSE,
+                             ModuleName,
+                             &moduleInfo);
+
+    if (!result)
+    {
+        CloseHandle(ProcessHandle);
+        return FALSE;
+    }
+
+    status = LdrUnloadDllEx64(ProcessHandle,
+                              IsProcessInitialized,
+                              moduleInfo.ModuleHandle,
+                              Timeout);
+
+    return status != STATUS_UNSUCCESSFUL;
 }

@@ -58,6 +58,30 @@
     <Filter Include="Файлы исходного кода\process">
       <UniqueIdentifier>{b22c9602-66f2-4afe-b10e-41cb48a4734b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Заголовочные файлы\security">
+      <UniqueIdentifier>{f9fe2fb4-52ea-4ae4-8699-7a080ce4f5b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\security">
+      <UniqueIdentifier>{24cf21fe-4559-4e71-8b33-7b75a83068e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\system">
+      <UniqueIdentifier>{4803d5a2-4e48-4a04-aa52-c9176cb86ec3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\system">
+      <UniqueIdentifier>{140dd66f-fcca-4bee-b18e-3751b18dacca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\native">
+      <UniqueIdentifier>{ef01c72a-2866-4d1f-877e-22307cb7bf88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\native">
+      <UniqueIdentifier>{eff33616-c248-4a6b-9a3f-929ba4fd1713}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\logger">
+      <UniqueIdentifier>{dc2038f9-16cf-4d13-9241-9ef6a774365b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\logger">
+      <UniqueIdentifier>{6ac554e0-63b4-4d9d-b2a1-8f24a0b24c46}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="inject\il_utils_x64.cpp">
@@ -81,9 +105,6 @@
     <ClCompile Include="inject\il_utils.cpp">
       <Filter>Файлы исходного кода\inject</Filter>
     </ClCompile>
-    <ClCompile Include="string\str_utils.cpp">
-      <Filter>Файлы исходного кода\string</Filter>
-    </ClCompile>
     <ClCompile Include="process\process_utils.cpp">
       <Filter>Файлы исходного кода\process</Filter>
     </ClCompile>
@@ -104,6 +125,30 @@
     </ClCompile>
     <ClCompile Include="ipc\ipc_shared_memory.cpp">
       <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc_server_side.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="ipc\ipc_utils.cpp">
+      <Filter>Файлы исходного кода\ipc</Filter>
+    </ClCompile>
+    <ClCompile Include="security\security_utils.cpp">
+      <Filter>Файлы исходного кода\security</Filter>
+    </ClCompile>
+    <ClCompile Include="system\system_utils.cpp">
+      <Filter>Файлы исходного кода\system</Filter>
+    </ClCompile>
+    <ClCompile Include="native\native_utils.cpp">
+      <Filter>Файлы исходного кода\native</Filter>
+    </ClCompile>
+    <ClCompile Include="logger\logger_utils.cpp">
+      <Filter>Файлы исходного кода\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="string\string_utils.cpp">
+      <Filter>Файлы исходного кода\string</Filter>
+    </ClCompile>
+    <ClCompile Include="dll_decls.cpp">
+      <Filter>Файлы исходного кода</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -236,22 +281,13 @@
     <ClInclude Include="asmjit\x86.h">
       <Filter>Заголовочные файлы\asmjit</Filter>
     </ClInclude>
-    <ClInclude Include="string\str_utils.h">
-      <Filter>Заголовочные файлы\string</Filter>
-    </ClInclude>
     <ClInclude Include="process\process_utils.h">
       <Filter>Заголовочные файлы\process</Filter>
     </ClInclude>
     <ClInclude Include="thread\thread_utils.h">
       <Filter>Заголовочные файлы\thread</Filter>
     </ClInclude>
-    <ClInclude Include="ipc\ipc_client_side.h">
-      <Filter>Файлы исходного кода\ipc</Filter>
-    </ClInclude>
     <ClInclude Include="ipc\ipc.h">
-      <Filter>Заголовочные файлы\ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="ipc\ipc_defs.h">
       <Filter>Заголовочные файлы\ipc</Filter>
     </ClInclude>
     <ClInclude Include="ipc\ipc_event.h">
@@ -274,6 +310,27 @@
     </ClInclude>
     <ClInclude Include="ipc\ipc_types.h">
       <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="ipc\ipc_client_side.h">
+      <Filter>Заголовочные файлы\ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="security\security_utils.h">
+      <Filter>Заголовочные файлы\security</Filter>
+    </ClInclude>
+    <ClInclude Include="system\system_utils.h">
+      <Filter>Заголовочные файлы\system</Filter>
+    </ClInclude>
+    <ClInclude Include="native\native_utils.h">
+      <Filter>Заголовочные файлы\native</Filter>
+    </ClInclude>
+    <ClInclude Include="logger\logger_utils.h">
+      <Filter>Заголовочные файлы\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="string\string_utils.h">
+      <Filter>Заголовочные файлы\string</Filter>
+    </ClInclude>
+    <ClInclude Include="stddefs.h">
+      <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
