@@ -6,14 +6,14 @@
 BOOL
 GlobalCreateChannel(LPCWSTR ChannelName,
                     BOOL GlobalObject,
-                    SIZE_T Size,
+                    DWORD Size,
                     PSHARED_MEMORY *SharedMemory)
 {
-    LPCWSTR ObjectNamespace = NULL;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
     if (!SharedMemory)
@@ -28,7 +28,7 @@ GlobalCreateChannel(LPCWSTR ChannelName,
         return FALSE;
     }
 
-    return IpcCreateSharedMemoryW(ObjectNamespace,
+    return IpcCreateSharedMemoryW(objectNamespace,
                                   ChannelName,
                                   IPC_GLOBAL_CHANNEL,
                                   Size,
@@ -38,13 +38,13 @@ GlobalCreateChannel(LPCWSTR ChannelName,
 BOOL
 GlobalDestroyChannel(PSHARED_MEMORY SharedMemory)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = IpcDestroySharedMemory(SharedMemory);
+    result = IpcDestroySharedMemory(SharedMemory);
 
     free(SharedMemory);
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -52,20 +52,20 @@ GlobalOpenChannel(LPCWSTR ChannelName,
                   BOOL GlobalObject,
                   PSHARED_MEMORY SharedMemory)
 {
-    BOOL Result;
-    LPCWSTR ObjectNamespace = NULL;
+    BOOL result;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
-    Result = IpcOpenSharedMemoryW(ObjectNamespace,
+    result = IpcOpenSharedMemoryW(objectNamespace,
                                   ChannelName,
                                   IPC_GLOBAL_CHANNEL,
                                   SharedMemory);
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -101,11 +101,11 @@ GlobalCreateChannelSendHeaderEvent(LPCWSTR ChannelName,
                                    BOOL GlobalObject,
                                    PEVENT *Event)
 {
-    LPCWSTR ObjectNamespace = NULL;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
     if (!Event)
@@ -120,7 +120,7 @@ GlobalCreateChannelSendHeaderEvent(LPCWSTR ChannelName,
         return FALSE;
     }
 
-    return IpcCreateEventW(ObjectNamespace,
+    return IpcCreateEventW(objectNamespace,
                            ChannelName,
                            IPC_GLOBAL_CHANNEL_HEADER_SEND_EVENT,
                            FALSE,
@@ -131,43 +131,43 @@ GlobalCreateChannelSendHeaderEvent(LPCWSTR ChannelName,
 BOOL
 GlobalDestroyChannelSendHeaderEvent(PEVENT Event)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = IpcDestroyEvent(Event);
+    result = IpcDestroyEvent(Event);
 
     free(Event);
 
-    return Result;
+    return result;
 }
 
 BOOL
 GlobalSetChannelSendHeaderEvent(LPCWSTR ChannelName,
                                 BOOL GlobalObject)
 {
-    BOOL Result;
-    EVENT Event;
-    LPCWSTR ObjectNamespace = NULL;
+    BOOL result;
+    EVENT event;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
-    Result = IpcOpenEventW(ObjectNamespace,
+    result = IpcOpenEventW(objectNamespace,
                            ChannelName,
                            IPC_GLOBAL_CHANNEL_HEADER_SEND_EVENT,
-                           &Event);
+                           &event);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Result = IpcSetEvent(&Event);
+    result = IpcSetEvent(&event);
 
-    Result = IpcCloseEvent(&Event) && Result;
+    result = IpcCloseEvent(&event) && result;
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -175,31 +175,31 @@ GlobalWaitChannelSendHeaderEvent(LPCWSTR ChannelName,
                                  BOOL GlobalObject,
                                  DWORD Timeout)
 {
-    BOOL Result;
-    EVENT Event;
-    LPCWSTR ObjectNamespace = NULL;
-    DWORD WaitStatus;
+    BOOL result;
+    EVENT event;
+    LPCWSTR objectNamespace = NULL;
+    DWORD waitStatus;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
-    Result = IpcOpenEventW(ObjectNamespace,
+    result = IpcOpenEventW(objectNamespace,
                            ChannelName,
                            IPC_GLOBAL_CHANNEL_HEADER_SEND_EVENT,
-                           &Event);
+                           &event);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    WaitStatus = IpcWaitEvent(&Event, Timeout);
+    waitStatus = IpcWaitEvent(&event, Timeout);
 
-    Result = IpcCloseEvent(&Event);
+    result = IpcCloseEvent(&event);
 
-    return Result && WaitStatus == WAIT_OBJECT_0;
+    return result && waitStatus == WAIT_OBJECT_0;
 }
 
 // channel ready event
@@ -209,11 +209,11 @@ GlobalCreateChannelReadyEvent(LPCWSTR ChannelName,
                               BOOL GlobalObject,
                               PEVENT *Event)
 {
-    LPCWSTR ObjectNamespace = NULL;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
     if (!Event)
@@ -228,7 +228,7 @@ GlobalCreateChannelReadyEvent(LPCWSTR ChannelName,
         return FALSE;
     }
 
-    return IpcCreateEventW(ObjectNamespace,
+    return IpcCreateEventW(objectNamespace,
                            ChannelName,
                            IPC_GLOBAL_CHANNEL_READY_EVENT,
                            FALSE,
@@ -239,13 +239,13 @@ GlobalCreateChannelReadyEvent(LPCWSTR ChannelName,
 BOOL
 GlobalDestroyChannelReadyEvent(PEVENT Event)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = IpcDestroyEvent(Event);
+    result = IpcDestroyEvent(Event);
 
     free(Event);
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -255,35 +255,49 @@ GlobalSetChannelReadyEvent(PEVENT Event)
 }
 
 BOOL
-GlobalWaitChannelReadyEvent(LPCWSTR ChannelName,
+GlobalSetChannelReadyEvent2(LPCWSTR ChannelName,
                             BOOL GlobalObject,
                             DWORD Timeout)
 {
-    BOOL Result;
-    EVENT Event;
-    LPCWSTR ObjectNamespace = NULL;
-    DWORD WaitStatus;
+    BOOL result;
+    EVENT event;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
-    Result = IpcOpenEventW(ObjectNamespace,
+    result = IpcOpenEventW(objectNamespace,
                            ChannelName,
                            IPC_GLOBAL_CHANNEL_READY_EVENT,
-                           &Event);
+                           &event);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    WaitStatus = IpcWaitEvent(&Event, Timeout);
+    result = IpcSetEvent(&event);
 
-    Result = IpcCloseEvent(&Event);
+    result = IpcCloseEvent(&event) && result;
 
-    return Result && WaitStatus == WAIT_OBJECT_0;
+    return result;
+}
+
+BOOL
+GlobalWaitChannelReadyEvent(LPCWSTR ChannelName,
+                            BOOL GlobalObject,
+                            DWORD Timeout)
+{
+    DWORD waitStatus;
+
+    waitStatus = IpcWaitEventEx(ChannelName,
+                                IPC_GLOBAL_CHANNEL_READY_EVENT,
+                                GlobalObject,
+                                Timeout);
+
+    return waitStatus == WAIT_OBJECT_0;
 }
 
 // local channel ready event
@@ -293,11 +307,11 @@ GlobalCreateLocalChannelReadyEvent(LPCWSTR ChannelName,
                                    BOOL GlobalObject,
                                    PEVENT *Event)
 {
-    LPCWSTR ObjectNamespace = NULL;
+    LPCWSTR objectNamespace = NULL;
 
     if (GlobalObject)
     {
-        ObjectNamespace = L"Global";
+        objectNamespace = L"Global";
     }
 
     if (!Event)
@@ -312,7 +326,7 @@ GlobalCreateLocalChannelReadyEvent(LPCWSTR ChannelName,
         return FALSE;
     }
 
-    return IpcCreateEventW(ObjectNamespace,
+    return IpcCreateEventW(objectNamespace,
                            ChannelName,
                            IPC_GLOBAL_LOCAL_CHANNEL_READY_EVENT,
                            FALSE,
@@ -323,13 +337,13 @@ GlobalCreateLocalChannelReadyEvent(LPCWSTR ChannelName,
 BOOL
 GlobalDestroyLocalChannelReadyEvent(PEVENT Event)
 {
-    BOOL Result;
+    BOOL result;
 
-    Result = IpcDestroyEvent(Event);
+    result = IpcDestroyEvent(Event);
 
     free(Event);
 
-    return Result;
+    return result;
 }
 
 BOOL
@@ -343,29 +357,12 @@ GlobalWaitLocalChannelReadyEvent(LPCWSTR ChannelName,
                                  BOOL GlobalObject,
                                  DWORD Timeout)
 {
-    BOOL Result;
-    EVENT Event;
-    LPCWSTR ObjectNamespace = NULL;
-    DWORD WaitStatus;
+    DWORD waitStatus;
 
-    if (GlobalObject)
-    {
-        ObjectNamespace = L"Global";
-    }
+    waitStatus = IpcWaitEventEx(ChannelName,
+                                IPC_GLOBAL_LOCAL_CHANNEL_READY_EVENT,
+                                GlobalObject,
+                                Timeout);
 
-    Result = IpcOpenEventW(ObjectNamespace,
-                           ChannelName,
-                           IPC_GLOBAL_LOCAL_CHANNEL_READY_EVENT,
-                           &Event);
-
-    if (!Result)
-    {
-        return FALSE;
-    }
-
-    WaitStatus = IpcWaitEvent(&Event, Timeout);
-
-    Result = IpcCloseEvent(&Event);
-
-    return Result && WaitStatus == WAIT_OBJECT_0;
+    return waitStatus == WAIT_OBJECT_0;
 }

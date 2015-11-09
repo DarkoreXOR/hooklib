@@ -1,128 +1,134 @@
 #include "process_utils.h"
 
 BOOL
+PsIsX64Process(HANDLE ProcessHandle,
+               PBOOL Result)
+{
+    HMODULE moduleHandle;
+    BOOL isTarget64Bit = FALSE;
+    IS_WOW64_PROCESS isWow64ProcessProc;
+
+    if (!Result)
+    {
+        return FALSE;
+    }
+
+#ifndef _M_X64
+    GET_NATIVE_SYSTEM_INFO GetNativeSystemInfoProc;
+    SYSTEM_INFO SysInfo;
+#endif
+
+    moduleHandle = GetModuleHandleW(L"kernel32");
+
+    if (moduleHandle == NULL)
+    {
+        return FALSE;
+    }
+
+    if (ProcessHandle == NULL)
+    {
+        return FALSE;
+    }
+
+    isWow64ProcessProc = (IS_WOW64_PROCESS)GetProcAddress(moduleHandle, "IsWow64Process");
+
+#ifdef _M_X64
+    if (!isWow64ProcessProc(ProcessHandle, &isTarget64Bit))
+    {
+        return FALSE;
+    }
+
+    isTarget64Bit = !isTarget64Bit;
+#else
+    isTarget64Bit = FALSE;
+
+    if (isWow64ProcessProc == NULL)
+    {
+        return FALSE;
+    }
+
+    GetNativeSystemInfoProc = (GET_NATIVE_SYSTEM_INFO)GetProcAddress(moduleHandle,
+                                                                     "GetNativeSystemInfo");
+
+    if (GetNativeSystemInfoProc == NULL)
+    {
+        return FALSE;
+    }
+
+    GetNativeSystemInfoProc(&SysInfo);
+
+    if (SysInfo.wProcessorArchitecture != PROCESSOR_ARCHITECTURE_INTEL)
+    {
+        if (!isWow64ProcessProc(ProcessHandle, &isTarget64Bit))
+        {
+            return FALSE;
+        }
+        isTarget64Bit = !isTarget64Bit;
+    }
+#endif
+
+    *Result = isTarget64Bit;
+
+    return TRUE;
+}
+
+BOOL
 PsGetProcesses(PROCESS_INFO *Entries,
                SIZE_T NumOfEntries,
                PSIZE_T RealNumOfEntries)
 {
-    BOOL Result;
+    BOOL result;
     PROCESSENTRY32 pe32;
-    HANDLE hProcessSnap;
-    SIZE_T ProcessOffset = 0;
-    SIZE_T ProcessCounter = 0;
+    HANDLE processSnapHandle;
+    SIZE_T processOffset = 0;
+    SIZE_T processCounter = 0;
 
-    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    processSnapHandle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
-    if (hProcessSnap == INVALID_HANDLE_VALUE)
+    if (processSnapHandle == INVALID_HANDLE_VALUE)
     {
         return FALSE;
     }
 
     pe32.dwSize = sizeof(PROCESSENTRY32);
 
-    Result = Process32Next(hProcessSnap, &pe32);
+    result = Process32Next(processSnapHandle, &pe32);
 
-    if (!Result)
+    if (!result)
     {
-        CloseHandle(hProcessSnap);
+        CloseHandle(processSnapHandle);
         return FALSE;
     }
 
     do
     {
-        Result = FALSE;
+        result = FALSE;
 
-        ProcessCounter++;
+        processCounter++;
 
-        if (ProcessOffset >= NumOfEntries)
+        if (processOffset >= NumOfEntries)
         {
-            Result = Process32Next(hProcessSnap, &pe32);
+            result = Process32Next(processSnapHandle, &pe32);
             continue;
         }
 
-        Entries[ProcessOffset].ParentProcessId = pe32.th32ParentProcessID;
-        Entries[ProcessOffset].ProcessId = pe32.th32ProcessID;
+        Entries[processOffset].ParentProcessId = pe32.th32ParentProcessID;
+        Entries[processOffset].ProcessId = pe32.th32ProcessID;
 
-        ProcessOffset++;
+        processOffset++;
 
-        Result = Process32Next(hProcessSnap, &pe32);
+        result = Process32Next(processSnapHandle, &pe32);
     }
-    while (Result);
+    while (result);
 
-    CloseHandle(hProcessSnap);
+    CloseHandle(processSnapHandle);
 
     if (RealNumOfEntries)
     {
-        *RealNumOfEntries = ProcessCounter;
+        *RealNumOfEntries = processCounter;
     }
 
-    if (ProcessCounter > NumOfEntries)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-BOOL
-PsGetModules(DWORD ProcessId,
-             MODULE_INFO *Entries,
-             SIZE_T NumOfEntries,
-             PSIZE_T RealNumOfEntries)
-{
-    BOOL Result;
-    MODULEENTRY32 me32;
-    HANDLE hModuleSnap = INVALID_HANDLE_VALUE;
-    SIZE_T ModuleOffset = 0;
-    SIZE_T ModuleCounter = 0;
-
-    hModuleSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, ProcessId);
-
-    if (hModuleSnap == INVALID_HANDLE_VALUE)
-    {
-        return FALSE;
-    }
-
-    me32.dwSize = sizeof(MODULEENTRY32);
-
-    Result = Module32First(hModuleSnap, &me32);
-
-    if (!Result)
-    {
-        CloseHandle(hModuleSnap);
-        return FALSE;
-    }
-
-    do
-    {
-        Result = FALSE;
-
-        ModuleCounter++;
-
-        if (ModuleOffset >= NumOfEntries)
-        {
-            Result = Module32Next(hModuleSnap, &me32);
-            continue;
-        }
-
-        Entries[ModuleOffset].ModuleHandle = (HMODULE)me32.modBaseAddr;
-        wcscpy_s(Entries[ModuleOffset].ModulePath, MAX_PATH, me32.szExePath);
-        wcscpy_s(Entries[ModuleOffset].ModuleName, MAX_PATH, me32.szModule);
-
-        ModuleOffset++;
-
-        Result = Module32Next(hModuleSnap, &me32);
-    }
-    while (Result);
-
-    CloseHandle(hModuleSnap);
-
-    if (RealNumOfEntries)
-    {
-        *RealNumOfEntries = ModuleCounter;
-    }
-
-    if (ModuleCounter > NumOfEntries)
+    if (processCounter > NumOfEntries)
     {
         return FALSE;
     }
@@ -132,85 +138,827 @@ PsGetModules(DWORD ProcessId,
 
 
 BOOL
-GetModuleInfoByProcessId(DWORD ProcessId,
-                         LPCWSTR ModuleName,
-                         PMODULE_INFO ModuleHandle)
+PeReadDosHeader(HANDLE ProcessHandle,
+                LPVOID ModuleBase,
+                PIMAGE_DOS_HEADER DosHeader)
 {
-    BOOL Result;
-    MODULE_INFO *Modules;
-    SIZE_T NumOfModules;
-    WCHAR CompareModuleName[MAX_PATH];
-    WCHAR RetModuleName[MAX_PATH];
+    BOOL result;
 
-    Result = wcscpy_s(CompareModuleName, MAX_PATH, ModuleName) == 0;
-
-    if (!Result)
+    if (!DosHeader)
     {
         return FALSE;
     }
 
-    Result = _wcsupr_s(CompareModuleName, MAX_PATH) == 0;
+    result = ReadProcessMemory(ProcessHandle, ModuleBase, DosHeader, sizeof(IMAGE_DOS_HEADER), NULL);
 
-    if (!Result)
+    if (!result)
     {
         return FALSE;
     }
 
-    Modules = (PMODULE_INFO)malloc(sizeof(MODULE_INFO) * 0x1000);
-
-    if (!Modules)
+    if (DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
     {
         return FALSE;
     }
 
-    Result = PsGetModules(ProcessId,
-                          Modules,
-                          0x1000,
-                          &NumOfModules);
-
-    if (!Result)
+    if (DosHeader->e_lfanew == 0)
     {
-        free(Modules);
         return FALSE;
     }
 
-    if (NumOfModules == 0)
+    return TRUE;
+}
+
+BOOL
+PeReadNtHeader32(HANDLE ProcessHandle,
+                 LPVOID ModuleBase,
+                 PIMAGE_NT_HEADERS32 NtHeader)
+{
+    BOOL result;
+    IMAGE_DOS_HEADER dosHeader = { 0 };
+    LPVOID ntHeaderBase;
+
+    result = PeReadDosHeader(ProcessHandle,
+                             ModuleBase,
+                             &dosHeader);
+
+    if (!result)
     {
-        free(Modules);
         return FALSE;
     }
 
-    for (SIZE_T i = 0; i < NumOfModules; ++i)
-    {
-        Result = wcscpy_s(RetModuleName, MAX_PATH, Modules[i].ModuleName) == 0;
+    ntHeaderBase = (LPVOID)((uintptr_t)ModuleBase + dosHeader.e_lfanew);
 
-        if (!Result)
+    result = ReadProcessMemory(ProcessHandle,
+                               ntHeaderBase,
+                               NtHeader,
+                               sizeof(IMAGE_NT_HEADERS32),
+                               NULL);
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->Signature != IMAGE_NT_SIGNATURE)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->FileHeader.Machine != IMAGE_FILE_MACHINE_I386)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->FileHeader.SizeOfOptionalHeader != sizeof(IMAGE_OPTIONAL_HEADER32))
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->OptionalHeader.ImageBase != (DWORD)ModuleBase)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL
+PeReadNtHeader64(HANDLE ProcessHandle,
+                 LPVOID ModuleBase,
+                 PIMAGE_NT_HEADERS64 NtHeader)
+{
+    BOOL result;
+    IMAGE_DOS_HEADER dosHeader = { 0 };
+    LPVOID ntHeaderBase;
+
+    result = PeReadDosHeader(ProcessHandle, ModuleBase, &dosHeader);
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    ntHeaderBase = (LPVOID)((uintptr_t)ModuleBase + dosHeader.e_lfanew);
+
+    result = ReadProcessMemory(ProcessHandle,
+                               ntHeaderBase,
+                               NtHeader,
+                               sizeof(IMAGE_NT_HEADERS64),
+                               NULL);
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->Signature != IMAGE_NT_SIGNATURE)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64 &&
+        NtHeader->FileHeader.Machine != IMAGE_FILE_MACHINE_IA64)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->FileHeader.SizeOfOptionalHeader != sizeof(IMAGE_OPTIONAL_HEADER64))
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+    {
+        return FALSE;
+    }
+
+    if (NtHeader->OptionalHeader.ImageBase != (ULONGLONG)ModuleBase)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL
+PeReadExportTable(HANDLE ProcessHandle,
+                  BOOL AsX86,
+                  LPVOID ModuleBase,
+                  PDWORD NumOfFunctions,
+                  PDWORD NumOfNames,
+                  PDWORD NumOfOrdinals,
+                  DWORD **AddressTable,
+                  DWORD **NameTable,
+                  WORD **OrdinalTable)
+{
+    BOOL result;
+    IMAGE_NT_HEADERS32 ntHeader32;
+    IMAGE_NT_HEADERS64 ntHeader64;
+    IMAGE_EXPORT_DIRECTORY exportDirectory;
+    DWORD exportDirectoryRVA;
+    LPVOID exportDirectoryBase;
+    LPVOID addressBase;
+    LPVOID nameBase;
+    LPVOID ordinalBase;
+
+    if (!NumOfFunctions || !NumOfNames || !NumOfOrdinals)
+    {
+        return FALSE;
+    }
+
+    if (!AddressTable || !NameTable || !OrdinalTable)
+    {
+        return FALSE;
+    }
+
+    if (AsX86)
+    {
+        result = PeReadNtHeader32(ProcessHandle,
+                                  ModuleBase,
+                                  &ntHeader32);
+    }
+    else
+    {
+        result = PeReadNtHeader64(ProcessHandle,
+                                  ModuleBase,
+                                  &ntHeader64);
+    }
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    if (AsX86)
+    {
+        exportDirectoryRVA = ntHeader32.OptionalHeader.DataDirectory[0].VirtualAddress;
+    }
+    else
+    {
+        exportDirectoryRVA = ntHeader64.OptionalHeader.DataDirectory[0].VirtualAddress;
+    }
+
+    exportDirectoryBase = (LPVOID)((uintptr_t)ModuleBase + exportDirectoryRVA);
+
+    result = ReadProcessMemory(ProcessHandle,
+                               exportDirectoryBase,
+                               &exportDirectory,
+                               sizeof(exportDirectory),
+                               NULL);
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    *NumOfFunctions = exportDirectory.NumberOfFunctions;
+    *NumOfNames = exportDirectory.NumberOfNames;
+    *NumOfOrdinals = exportDirectory.NumberOfFunctions;
+
+    *AddressTable = (DWORD*)malloc(sizeof(DWORD) * exportDirectory.NumberOfFunctions);
+
+    if (!(*AddressTable))
+    {
+        return FALSE;
+    }
+
+    *NameTable = (DWORD*)malloc(sizeof(DWORD) * exportDirectory.NumberOfNames);
+
+    if (!(*NameTable))
+    {
+        free(*AddressTable);
+        return FALSE;
+    }
+
+    *OrdinalTable = (WORD*)malloc(sizeof(WORD) * exportDirectory.NumberOfFunctions);
+
+    if (!(*OrdinalTable))
+    {
+        free(*AddressTable);
+        free(*NameTable);
+        return FALSE;
+    }
+
+    addressBase = (LPVOID)((uintptr_t)ModuleBase + exportDirectory.AddressOfFunctions);
+    nameBase = (LPVOID)((uintptr_t)ModuleBase + exportDirectory.AddressOfNames);
+    ordinalBase = (LPVOID)((uintptr_t)ModuleBase + exportDirectory.AddressOfNameOrdinals);
+
+    result = ReadProcessMemory(ProcessHandle,
+                               addressBase,
+                               *AddressTable,
+                               sizeof(DWORD) * exportDirectory.NumberOfFunctions,
+                               NULL);
+
+    if (!result)
+    {
+        free(*AddressTable);
+        free(*NameTable);
+        free(*OrdinalTable);
+        return FALSE;
+    }
+
+    result = ReadProcessMemory(ProcessHandle,
+                               nameBase,
+                               *NameTable,
+                               sizeof(DWORD) * exportDirectory.NumberOfNames,
+                               NULL);
+
+    if (!result)
+    {
+        free(*AddressTable);
+        free(*NameTable);
+        free(*OrdinalTable);
+        return FALSE;
+    }
+
+    result = ReadProcessMemory(ProcessHandle,
+                               ordinalBase,
+                               *OrdinalTable,
+                               sizeof(WORD) * exportDirectory.NumberOfFunctions,
+                               NULL);
+
+    if (!result)
+    {
+        free(*AddressTable);
+        free(*NameTable);
+        free(*OrdinalTable);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+VOID
+PeFreeExportTable(DWORD *AddressTable,
+                  DWORD *NameTable,
+                  WORD *OrdinalTable)
+{
+    free(AddressTable);
+    free(NameTable);
+    free(OrdinalTable);
+}
+
+BOOL
+PsGetModulesByProcessHandle(HANDLE ProcessHandle,
+                            MODULE_INFO *Entries,
+                            SIZE_T NumOfEntries,
+                            PSIZE_T RealNumOfEntries)
+{
+    BOOL result;
+    HMODULE *modules;
+    DWORD needSize;
+    SIZE_T moduleOffset = 0;
+    SIZE_T moduleCounter = 0;
+
+    if (!RealNumOfEntries)
+    {
+        return FALSE;
+    }
+
+    modules = (HMODULE*)malloc(sizeof(HMODULE) * NumOfEntries);
+
+    if (!modules)
+    {
+        return FALSE;
+    }
+
+    result = EnumProcessModulesEx(ProcessHandle,
+                                  modules,
+                                  (DWORD)(sizeof(HMODULE) * NumOfEntries),
+                                  &needSize,
+                                  LIST_MODULES_ALL);
+
+    if (!result)
+    {
+        free(modules);
+        return FALSE;
+    }
+
+    *RealNumOfEntries = needSize / sizeof(HMODULE);
+
+    do
+    {
+        result = FALSE;
+
+        moduleCounter++;
+
+        if (moduleOffset >= NumOfEntries)
         {
-            free(Modules);
+            continue;
+        }
+
+        Entries[moduleOffset].ModuleHandle = modules[moduleOffset];
+
+        GetModuleFileNameEx(ProcessHandle,
+                            modules[moduleOffset],
+                            Entries[moduleOffset].ModulePath,
+                            MAX_PATH);
+
+        GetShortFileName(Entries[moduleOffset].ModulePath,
+                         Entries[moduleOffset].ModuleName,
+                         MAX_PATH);
+
+        result = moduleCounter < (*RealNumOfEntries);
+
+        moduleOffset++;
+    }
+    while (result);
+
+    free(modules);
+
+    *RealNumOfEntries = moduleCounter;
+
+    if (moduleCounter > NumOfEntries)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL
+PsGetImageFileNameEx(HANDLE ProcessHandle,
+                     LPVOID ModuleBase,
+                     LPWSTR FileName,
+                     SIZE_T Length,
+                     PSIZE_T ReturnLength)
+{
+    NTSTATUS status;
+    PNT_UNICODE_STRING unicodeString;
+    SIZE_T bufferSize;
+    LPVOID buffer;
+    SIZE_T retLength;
+
+    bufferSize = 0x100;
+
+    do
+    {
+        buffer = malloc(bufferSize);
+
+        if (!buffer)
+        {
+            break;
+        }
+
+        status = NtQueryVirtualMemory(ProcessHandle,
+                                      ModuleBase,
+                                      MEMORY_INFORMATION_CLASS::MemoryMappedFilenameInformation,
+                                      buffer,
+                                      bufferSize,
+                                      &retLength);
+
+        if (status == STATUS_BUFFER_OVERFLOW)
+        {
+            free(buffer);
+            bufferSize = retLength;
+        }
+        else
+        {
+            break;
+        }
+
+    }
+    while (TRUE);
+
+    if (buffer)
+    {
+        unicodeString = (PNT_UNICODE_STRING)buffer;
+        wcscpy_s(FileName, Length, unicodeString->Buffer);
+        *ReturnLength = unicodeString->MaximumLength;
+        free(buffer);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    return status;
+}
+
+
+BOOL
+PsGetProcessMappedModules(HANDLE ProcessHandle,
+                          MODULE_INFO *Entries,
+                          SIZE_T NumOfEntries,
+                          PSIZE_T RealNumOfEntries)
+{
+    SIZE_T moduleOffset = 0;
+    SIZE_T moduleCounter = 0;
+
+    MEMORY_BASIC_INFORMATION memBasicInfo;
+    LPVOID baseAddress = NULL;
+    SIZE_T queryResult;
+    SIZE_T returnLength;
+
+    do
+    {
+        queryResult = VirtualQueryEx(ProcessHandle, baseAddress, &memBasicInfo, sizeof(memBasicInfo));
+
+        if (!queryResult)
+        {
+            break;
+        }
+
+        if (memBasicInfo.Type == MEM_IMAGE && baseAddress == memBasicInfo.AllocationBase)
+        {
+            moduleCounter++;
+
+            if (moduleOffset >= NumOfEntries)
+            {
+                baseAddress = (LPVOID)((uintptr_t)baseAddress + memBasicInfo.RegionSize);
+                continue;
+            }
+
+            DWORD Result = PsGetImageFileNameEx(ProcessHandle,
+                                                baseAddress,
+                                                Entries[moduleOffset].ModulePath,
+                                                MAX_PATH,
+                                                &returnLength);
+
+            Entries[moduleOffset].ModuleHandle = (HMODULE)baseAddress;
+
+            GetShortFileName(Entries[moduleOffset].ModulePath,
+                             Entries[moduleOffset].ModuleName,
+                             MAX_PATH);
+
+            moduleOffset++;
+        }
+
+        baseAddress = (LPVOID)((uintptr_t)baseAddress + memBasicInfo.RegionSize);
+    }
+    while (TRUE);
+
+    if (RealNumOfEntries)
+    {
+        *RealNumOfEntries = moduleCounter;
+    }
+
+    if (moduleCounter > NumOfEntries)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL
+PsGetProcessModules(HANDLE ProcessHandle,
+                    BOOL IsProcessInitialized,
+                    MODULE_INFO *Modules,
+                    SIZE_T NumOfModules,
+                    PSIZE_T RealNumOfModules)
+{
+    BOOL result;
+    HANDLE internalProcessHandle;
+
+    if (IsProcessInitialized)
+    {
+        result = PsCopyHandle(GetCurrentProcess(),
+                              ProcessHandle,
+                              &internalProcessHandle,
+                              PROCESS_ALL_ACCESS,
+                              FALSE);
+
+        if (!result)
+        {
             return FALSE;
         }
 
-        Result = _wcsupr_s(RetModuleName, MAX_PATH) == 0;
+        result = PsGetModulesByProcessHandle(ProcessHandle,
+                                             Modules,
+                                             NumOfModules,
+                                             RealNumOfModules);
 
-        if (!Result)
+        CloseHandle(internalProcessHandle);
+    }
+    else
+    {
+        result = PsCopyHandle(GetCurrentProcess(),
+                              ProcessHandle,
+                              &internalProcessHandle,
+                              PROCESS_ALL_ACCESS,
+                              FALSE);
+
+        if (!result)
         {
-            free(Modules);
             return FALSE;
         }
 
-        Result = wcscmp(RetModuleName, CompareModuleName) == 0;
+        result = PsGetProcessMappedModules(internalProcessHandle,
+                                           Modules,
+                                           NumOfModules,
+                                           RealNumOfModules);
 
-        if (Result)
+        CloseHandle(internalProcessHandle);
+    }
+
+    return result;
+}
+
+BOOL
+PsGetModuleInfo(HANDLE ProcessHandle,
+                BOOL IsProcessInitialized,
+                BOOL IsModule32,
+                LPCWSTR ModuleName,
+                PMODULE_INFO ModuleInfo)
+{
+    BOOL result;
+    MODULE_INFO *modules;
+    SIZE_T numOfModules;
+    WCHAR compareModuleName[MAX_PATH];
+    WCHAR retModuleName[MAX_PATH];
+
+    result = wcscpy_s(compareModuleName, MAX_PATH, ModuleName) == 0;
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    result = _wcsupr_s(compareModuleName, MAX_PATH) == 0;
+
+    if (!result)
+    {
+        return FALSE;
+    }
+
+    modules = (PMODULE_INFO)malloc(sizeof(MODULE_INFO) * 0x1000);
+
+    if (!modules)
+    {
+        return FALSE;
+    }
+
+    result = PsGetProcessModules(ProcessHandle,
+                                 IsProcessInitialized,
+                                 modules,
+                                 0x1000,
+                                 &numOfModules);
+
+    if (!result)
+    {
+        free(modules);
+        return FALSE;
+    }
+
+    if (numOfModules == 0)
+    {
+        free(modules);
+        return FALSE;
+    }
+
+    for (SIZE_T i = 0; i < numOfModules; ++i)
+    {
+        if (IsModule32 && ((UINT64)(modules[i].ModuleHandle)) > 0xFFFFFFFFULL)
         {
-            ModuleHandle->ModuleHandle = Modules[i].ModuleHandle;
-            wcscpy_s(ModuleHandle->ModuleName, MAX_PATH, Modules[i].ModuleName);
-            wcscpy_s(ModuleHandle->ModulePath, MAX_PATH, Modules[i].ModulePath);
-            free(Modules);
+            continue;
+        }
+
+        result = wcscpy_s(retModuleName, MAX_PATH, modules[i].ModuleName) == 0;
+
+        if (!result)
+        {
+            free(modules);
+            return FALSE;
+        }
+
+        result = _wcsupr_s(retModuleName, MAX_PATH) == 0;
+
+        if (!result)
+        {
+            free(modules);
+            return FALSE;
+        }
+
+        result = wcscmp(retModuleName, compareModuleName) == 0;
+
+        if (result)
+        {
+            ModuleInfo->ModuleHandle = modules[i].ModuleHandle;
+            wcscpy_s(ModuleInfo->ModuleName, MAX_PATH, modules[i].ModuleName);
+            wcscpy_s(ModuleInfo->ModulePath, MAX_PATH, modules[i].ModulePath);
+            free(modules);
             return TRUE;
         }
     }
 
-    free(Modules);
+    free(modules);
     return FALSE;
 }
 
+DWORD
+PsProcessHandleToId(HANDLE ProcessHandle)
+{
+    HANDLE targetHandle;
+    DWORD processId;
+
+    if (ProcessHandle == GetCurrentProcess())
+    {
+        return GetCurrentProcessId();
+    }
+
+    processId = GetProcessId(ProcessHandle);
+
+    if (processId)
+    {
+        return processId;
+    }
+
+    if (!PsCopyHandle(GetCurrentProcess(),
+                      ProcessHandle,
+                      &targetHandle,
+                      PROCESS_QUERY_INFORMATION,
+                      FALSE))
+    {
+        return 0;
+    }
+
+    processId = GetProcessId(targetHandle);
+
+    CloseHandle(targetHandle);
+
+    return processId;
+}
+
+HMODULE
+PsGetRemoteModuleHandle(HANDLE ProcessHandle,
+                        BOOL IsProcessInitialized,
+                        BOOL AsModule32,
+                        LPCWSTR ModuleName)
+{
+    MODULE_INFO moduleInfo;
+
+    if(!PsGetModuleInfo(ProcessHandle,
+                        IsProcessInitialized,
+                        AsModule32,
+                        ModuleName,
+                        &moduleInfo))
+    {
+        return NULL;
+    }
+
+    return moduleInfo.ModuleHandle;
+}
+
+BOOL
+PeGetProcAddressByName(HANDLE ProcessHandle,
+                       BOOL AsX86,
+                       LPVOID *ProcAddress,
+                       LPVOID ModuleBase,
+                       LPCSTR ProcName)
+{
+    DWORD numOfFunctions;
+    DWORD numOfNames;
+    DWORD numOfOrdinals;
+    DWORD *addressTable;
+    DWORD *nameTable;
+    WORD *ordinalTable;
+    LPVOID nameBase;
+    LPVOID addressBase = NULL;
+    CHAR functionName[MAX_EXPORT_SYMBOL_NAME_LENGTH];
+    WORD addressPosition;
+    BOOL found;
+
+    if (!ModuleBase || !ProcName)
+    {
+        return FALSE;
+    }
+
+    if(!PeReadExportTable(ProcessHandle,
+                          AsX86,
+                          ModuleBase,
+                          &numOfFunctions,
+                          &numOfNames,
+                          &numOfOrdinals,
+                          &addressTable,
+                          &nameTable,
+                          &ordinalTable))
+    {
+        return FALSE;
+    }
+
+    found = FALSE;
+
+    for (DWORD i = 0; i < numOfFunctions; ++i)
+    {
+        nameBase = PTR_ADD_OFFSET(ModuleBase,
+                                  nameTable[i]);
+
+        if(!ReadProcessMemory(ProcessHandle,
+                              nameBase, functionName,
+                              sizeof(functionName),
+                              NULL))
+        {
+            break;
+        }
+
+        addressPosition = ordinalTable[i];
+
+        if (!addressPosition)
+            continue;
+
+        addressBase = PTR_ADD_OFFSET(ModuleBase,
+                                     addressTable[addressPosition]);
+
+        if (strcmp(functionName, ProcName) == 0)
+        {
+            found = TRUE;
+            break;
+        }
+    }
+
+    PeFreeExportTable(addressTable,
+                      nameTable,
+                      ordinalTable);
+
+    if (found)
+    {
+        *ProcAddress = addressBase;
+    }
+
+    return found;
+}
+
+LPVOID
+PsGetRemoteProcAddress(HANDLE ProcessHandle,
+                       HMODULE ModuleHandle,
+                       LPCSTR ProcName)
+{
+    LPVOID procAddress = NULL;
+    BOOL isX64;
+
+    if(!PsIsX64Process(ProcessHandle, &isX64))
+    {
+        return NULL;
+    }
+
+    if(!PeGetProcAddressByName(ProcessHandle,
+                               !isX64,
+                               &procAddress,
+                               (LPVOID)ModuleHandle,
+                               ProcName))
+    {
+        return NULL;
+    }
+
+    return procAddress;
+}
+
+BOOL
+PsCopyHandle(HANDLE ProcessHandle,
+             HANDLE SourceHandle,
+             PHANDLE DestinationHandle,
+             DWORD DesiredAccess,
+             BOOL InheritHandle)
+{
+    return DuplicateHandle(ProcessHandle,
+                           SourceHandle,
+                           GetCurrentProcess(),
+                           DestinationHandle,
+                           DesiredAccess,
+                           InheritHandle,
+                           0);
+}

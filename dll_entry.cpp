@@ -5,16 +5,16 @@ EXPORT
 WINAPI
 IsX64System()
 {
-    return IlIsX64System();
+    return SysIsX64System();
 }
 
 BOOL
 EXPORT
 WINAPI
-IsX64Process(DWORD ProcessId,
+IsX64Process(HANDLE ProcessHandle,
              PBOOL Result)
 {
-    return IlIsX64Process(ProcessId, Result);
+    return PsIsX64Process(ProcessHandle, Result);
 }
 
 BOOL
@@ -65,11 +65,15 @@ WINAPI
 InjectLibrary(LPCWSTR DllFileName32,
               LPCWSTR DllFileName64,
               DWORD ProcessId,
+              HANDLE ProcessHandle,
+              BOOL IsProcessInitialized,
               DWORD Timeout)
 {
     return IlInjectLibrary(DllFileName32,
                            DllFileName64,
                            ProcessId,
+                           ProcessHandle,
+                           IsProcessInitialized,
                            Timeout);
 }
 
@@ -77,11 +81,13 @@ BOOL
 EXPORT
 WINAPI
 InjectLibrary32(LPCWSTR DllFileName,
-                DWORD ProcessId,
+                HANDLE ProcessHandle,
+                BOOL IsProcessInitialized,
                 DWORD Timeout)
 {
     return IlInjectLibrary32(DllFileName,
-                             ProcessId,
+                             ProcessHandle,
+                             IsProcessInitialized,
                              Timeout);
 }
 
@@ -89,24 +95,60 @@ BOOL
 EXPORT
 WINAPI
 InjectLibrary64(LPCWSTR DllFileName,
-                DWORD ProcessId,
+                HANDLE ProcessHandle,
+                BOOL IsProcessInitialized,
                 DWORD Timeout)
 {
     return IlInjectLibrary64(DllFileName,
-                             ProcessId,
+                             ProcessHandle,
+                             IsProcessInitialized,
                              Timeout);
 }
 
 BOOL
 EXPORT
 WINAPI
-UninjectLibrary(LPCWSTR DllFileName,
+UninjectLibrary(LPCWSTR ModuleName32,
+                LPCWSTR ModuleName64,
                 DWORD ProcessId,
+                HANDLE ProcessHandle,
+                BOOL IsProcessInitialized,
                 DWORD Timeout)
 {
-    return IlUninjectLibrary(DllFileName,
+    return IlUninjectLibrary(ModuleName32,
+                             ModuleName64,
                              ProcessId,
+                             ProcessHandle,
+                             IsProcessInitialized,
                              Timeout);
+}
+
+BOOL
+EXPORT
+WINAPI
+UninjectLibrary32(LPCWSTR ModuleName,
+                  HANDLE ProcessHandle,
+                  BOOL IsProcessInitialized,
+                  DWORD Timeout)
+{
+    return IlUninjectLibrary32(ModuleName,
+                               ProcessHandle,
+                               IsProcessInitialized,
+                               Timeout);
+}
+
+BOOL
+EXPORT
+WINAPI
+UninjectLibrary64(LPCWSTR ModuleName,
+                  HANDLE ProcessHandle,
+                  BOOL IsProcessInitialized,
+                  DWORD Timeout)
+{
+    return IlUninjectLibrary64(ModuleName,
+                               ProcessHandle,
+                               IsProcessInitialized,
+                               Timeout);
 }
 
 BOOL
@@ -197,20 +239,42 @@ ProcessHandleToId(HANDLE ProcessHandle)
     return PsProcessHandleToId(ProcessHandle);
 }
 
+BOOL
+InjectLibraryToAllProcesses(LPCWSTR DllFileName32,
+                            LPCWSTR DllFileName64,
+                            DWORD Timeout)
+{
+    return IlInjectLibraryToAllProcesses(DllFileName32,
+                                         DllFileName64,
+                                         Timeout);
+}
+
+BOOL
+UninjectLibraryFromAllProcesses(LPCWSTR ModuleName32,
+                                LPCWSTR ModuleName64,
+                                DWORD Timeout)
+{
+    return IlUninjectLibraryFromAllProcesses(ModuleName32,
+                                             ModuleName64,
+                                             Timeout);
+}
+
 VOID
 InitializeLibrary()
 {
     EnableDebugPrivilege(TRUE);
     EnableCreateGlobalPrivilege(TRUE);
     HkInitialize();
+    LOG(L"PID [%d] : %s", GetCurrentProcessId(), L"hooklib initialized");
 }
 
 VOID
 UninitializeLibrary()
 {
     HkUninitialize();
-    EnableDebugPrivilege(FALSE);
-    EnableCreateGlobalPrivilege(FALSE);
+    //EnableDebugPrivilege(FALSE);
+    //EnableCreateGlobalPrivilege(FALSE);
+    LOG(L"PID [%d] : %s", GetCurrentProcessId(), L"hooklib uninitialized");
 }
 
 BOOL

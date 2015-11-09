@@ -3,21 +3,21 @@
 BOOL
 HkInitialize()
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
-    Status = MH_Initialize();
+    status = MH_Initialize();
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkUninitialize()
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
-    Status = MH_Uninitialize();
+    status = MH_Uninitialize();
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
@@ -26,31 +26,31 @@ HkHookCode(LPVOID Target,
            LPVOID *Original,
            BOOL SetEnabled)
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
-    Status = MH_CreateHook(Target, Detour, Original);
+    status = MH_CreateHook(Target, Detour, Original);
 
-    if (Status != MH_OK)
+    if (status != MH_OK)
     {
         return FALSE;
     }
 
     if (SetEnabled)
     {
-        Status = MH_EnableHook(Target);
+        status = MH_EnableHook(Target);
     }
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkUnhookCode(LPVOID Target)
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
-    Status = MH_RemoveHook(Target);
+    status = MH_RemoveHook(Target);
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
@@ -60,16 +60,16 @@ HkHookApi(LPCWSTR ModuleName,
           LPVOID *Original,
           BOOL SetEnabled)
 {
-    MH_STATUS Status;
+    MH_STATUS status;
     HMODULE ModuleHandle;
     LPVOID ProcAddress;
 
-    Status = MH_CreateHookApi(ModuleName,
+    status = MH_CreateHookApi(ModuleName,
                               ProcName,
                               Detour,
                               Original);
 
-    if (Status != MH_OK)
+    if (status != MH_OK)
     {
         return FALSE;
     }
@@ -90,17 +90,17 @@ HkHookApi(LPCWSTR ModuleName,
             return FALSE;
         }
 
-        Status = MH_EnableHook(ProcAddress);
+        status = MH_EnableHook(ProcAddress);
     }
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkUnhookApi(LPCWSTR ModuleName,
             LPCSTR ProcName)
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
     HMODULE ModuleHandle;
     LPVOID ProcAddress;
@@ -119,71 +119,71 @@ HkUnhookApi(LPCWSTR ModuleName,
         return FALSE;
     }
 
-    Status = MH_RemoveHook(ProcAddress);
+    status = MH_RemoveHook(ProcAddress);
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkEnableHook(LPVOID Target)
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
     if (Target == NULL)
     {
         return FALSE;
     }
 
-    Status = MH_EnableHook(Target);
+    status = MH_EnableHook(Target);
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkDisableHook(LPVOID Target)
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
     if (Target == NULL)
     {
         return FALSE;
     }
 
-    Status = MH_EnableHook(Target);
+    status = MH_EnableHook(Target);
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkEnableAllHooks()
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
-    Status = MH_QueueEnableHook(MH_ALL_HOOKS);
+    status = MH_QueueEnableHook(MH_ALL_HOOKS);
 
-    if (Status != MH_OK)
+    if (status != MH_OK)
     {
         return FALSE;
     }
 
-    Status = MH_ApplyQueued();
+    status = MH_ApplyQueued();
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }
 
 BOOL
 HkDisableAllHooks()
 {
-    MH_STATUS Status;
+    MH_STATUS status;
 
-    Status = MH_QueueDisableHook(MH_ALL_HOOKS);
+    status = MH_QueueDisableHook(MH_ALL_HOOKS);
 
-    if (Status != MH_OK)
+    if (status != MH_OK)
     {
         return FALSE;
     }
 
-    Status = MH_ApplyQueued();
+    status = MH_ApplyQueued();
 
-    return Status == MH_OK;
+    return status == MH_OK;
 }

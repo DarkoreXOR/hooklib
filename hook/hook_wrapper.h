@@ -3,6 +3,7 @@
 
 #include "MinHook.h"
 #include <Windows.h>
+#include "..\logger\logger_utils.h"
 
 BOOL
 HkInitialize();

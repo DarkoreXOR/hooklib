@@ -3,16 +3,17 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include "ipc_defs.h"
+#include "ipc_utils.h"
+#include "..\security\security_utils.h"
 
-#define IPC_SHARED_MEMORY_NAME_SIZE 0x200
+#define IPC_SHARED_MEMORY_NAME_LENGTH 0x100
 
 typedef struct _SHARED_MEMORY
 {
-    WCHAR Name[IPC_SHARED_MEMORY_NAME_SIZE];
-    HANDLE FileMappingHandle;
+    WCHAR ObjectName[IPC_SHARED_MEMORY_NAME_LENGTH];
+    HANDLE ObjectHandle;
     PVOID MemoryPointer;
-    SIZE_T MemorySize;
+    DWORD MemorySize;
 } SHARED_MEMORY, *PSHARED_MEMORY;
 
 BOOL
@@ -20,7 +21,7 @@ IpcCreateSharedMemoryW(
     LPCWSTR ObjectNamespace,
     LPCWSTR ObjectName,
     LPCWSTR ObjectPostfix,
-    SIZE_T Size,
+    DWORD Size,
     PSHARED_MEMORY SharedMemory
 );
 
@@ -45,15 +46,15 @@ IpcDestroySharedMemory(
 BOOL
 IpcWriteToSharedMemory(
     PSHARED_MEMORY SharedMemory,
-    LPVOID SrcBuffer,
-    SIZE_T Size
+    LPVOID SourceBuffer,
+    DWORD Size
 );
 
 BOOL
 IpcReadFromSharedMemory(
     PSHARED_MEMORY SharedMemory,
-    LPVOID DestBuffer,
-    SIZE_T Size
+    LPVOID DestinationBuffer,
+    DWORD Size
 );
 
 #endif

@@ -3,13 +3,15 @@
 
 #include <Windows.h>
 #include <tchar.h>
+#include "ipc_utils.h"
+#include "..\security\security_utils.h"
 
-#define IPC_EVENT_NAME_SIZE 0x200
+#define IPC_EVENT_NAME_LENGTH 0x100
 
 typedef struct _EVENT
 {
-    WCHAR Name[IPC_EVENT_NAME_SIZE];
-    HANDLE Handle;
+    WCHAR ObjectName[IPC_EVENT_NAME_LENGTH];
+    HANDLE ObjectHandle;
 } EVENT, *PEVENT;
 
 BOOL

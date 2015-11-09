@@ -8,50 +8,38 @@ IpcCreateEventW(LPCWSTR ObjectNamespace,
                 BOOL InitialState,
                 PEVENT Event)
 {
-    WCHAR Name[IPC_EVENT_NAME_SIZE];
+    PSID sid;
     SECURITY_DESCRIPTOR sd = { 0 };
     SECURITY_ATTRIBUTES sa = { 0 };
 
-    if (!Event)
+    IpcMakeObjectName(Event->ObjectName,
+                      IPC_EVENT_NAME_LENGTH,
+                      ObjectNamespace,
+                      ObjectName,
+                      ObjectPostfix);
+
+    if(!ScCreateSecurityAttributes(&sa, &sd, &sid))
     {
         return FALSE;
     }
 
-    if (ObjectNamespace)
-    {
-        wcscpy_s(Name, IPC_EVENT_NAME_SIZE, ObjectNamespace);
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, L"\\");
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, ObjectPostfix);
-    }
-    else
-    {
-        wcscpy_s(Name, IPC_EVENT_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, ObjectPostfix);
-    }
+    Event->ObjectHandle = CreateEventW(&sa,
+                                       ManualReset,
+                                       InitialState,
+                                       Event->ObjectName);
 
-    InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
-    SetSecurityDescriptorOwner(&sd, NULL, FALSE);
-    SetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE);
+    ScDestroySecurityAttributes(sid);
 
-    sa.nLength = sizeof(sa);
-    sa.lpSecurityDescriptor = &sd;
-    sa.bInheritHandle = FALSE;
-
-    Event->Handle = CreateEventW(&sa, ManualReset, InitialState, Name);
-
-    if (!Event->Handle)
+    if (!Event->ObjectHandle)
     {
         return FALSE;
     }
 
-    if (Event->Handle && GetLastError() == ERROR_ALREADY_EXISTS)
+    if (Event->ObjectHandle && GetLastError() == ERROR_ALREADY_EXISTS)
     {
-        CloseHandle(Event->Handle);
+        CloseHandle(Event->ObjectHandle);
         return FALSE;
     }
-
-    wcscpy_s(Event->Name, IPC_EVENT_NAME_SIZE, Name);
 
     return TRUE;
 }
@@ -62,34 +50,20 @@ IpcOpenEventW(LPCWSTR ObjectNamespace,
               LPCWSTR ObjectPostfix,
               PEVENT Event)
 {
-    WCHAR Name[IPC_EVENT_NAME_SIZE];
+    IpcMakeObjectName(Event->ObjectName,
+                      IPC_EVENT_NAME_LENGTH,
+                      ObjectNamespace,
+                      ObjectName,
+                      ObjectPostfix);
 
-    if (!Event)
+    Event->ObjectHandle = OpenEventW(EVENT_ALL_ACCESS,
+                                     FALSE,
+                                     Event->ObjectName);
+
+    if (!Event->ObjectHandle)
     {
         return FALSE;
     }
-
-    if (ObjectNamespace)
-    {
-        wcscpy_s(Name, IPC_EVENT_NAME_SIZE, ObjectNamespace);
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, L"\\");
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, ObjectPostfix);
-    }
-    else
-    {
-        wcscpy_s(Name, IPC_EVENT_NAME_SIZE, ObjectName);
-        wcscat_s(Name, IPC_EVENT_NAME_SIZE, ObjectPostfix);
-    }
-
-    Event->Handle = OpenEventW(EVENT_ALL_ACCESS, FALSE, Name);
-
-    if (!Event->Handle)
-    {
-        return FALSE;
-    }
-
-    wcscpy_s(Event->Name, IPC_EVENT_NAME_SIZE, Name);
 
     return TRUE;
 }
@@ -102,7 +76,7 @@ IpcCloseEvent(PEVENT Event)
         return FALSE;
     }
 
-    return CloseHandle(Event->Handle);
+    return CloseHandle(Event->ObjectHandle);
 }
 
 BOOL
@@ -114,33 +88,19 @@ IpcDestroyEvent(PEVENT Event)
 BOOL
 IpcSetEvent(PEVENT Event)
 {
-    if (!Event)
-    {
-        return FALSE;
-    }
-
-    return SetEvent(Event->Handle);
+    return SetEvent(Event->ObjectHandle);
 }
 
 BOOL
 IpcResetEvent(PEVENT Event)
 {
-    if (!Event)
-    {
-        return FALSE;
-    }
-
-    return ResetEvent(Event->Handle);
+    return ResetEvent(Event->ObjectHandle);
 }
 
 DWORD
 IpcWaitEvent(PEVENT Event,
              DWORD Timeout)
 {
-    if (!Event)
-    {
-        return WAIT_FAILED;
-    }
-
-    return WaitForSingleObject(Event->Handle, Timeout);
+    return WaitForSingleObject(Event->ObjectHandle,
+                               Timeout);
 }

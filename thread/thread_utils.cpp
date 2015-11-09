@@ -2,36 +2,19 @@
 
 HANDLE
 WINAPI
-NewCreateRemoteThread(HANDLE hProcess,
-                      LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                      SIZE_T dwStackSize,
-                      LPTHREAD_START_ROUTINE lpStartAddress,
-                      LPVOID lpParameter,
-                      DWORD dwCreationFlags,
-                      LPDWORD lpThreadId)
+ThdNewCreateRemoteThread(HANDLE hProcess,
+                         LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                         SIZE_T dwStackSize,
+                         LPTHREAD_START_ROUTINE lpStartAddress,
+                         LPVOID lpParameter,
+                         DWORD dwCreationFlags,
+                         LPDWORD lpThreadId)
 {
-    RTL_CREATE_USER_THREAD RtlCreateUserThread;
-    HMODULE ModuleHandle;
-    HANDLE ThreadHandle;
-    NT_STATUS Status;
-    CLIENT_ID ClientId;
+    HANDLE threadHandle;
+    NTSTATUS status;
+    NT_CLIENT_ID clientId;
 
-    ModuleHandle = GetModuleHandleW(L"ntdll");
-
-    if (!ModuleHandle)
-    {
-        return NULL;
-    }
-
-    RtlCreateUserThread = (RTL_CREATE_USER_THREAD)GetProcAddress(ModuleHandle,
-                                                                 "RtlCreateUserThread");;
-
-    if (!RtlCreateUserThread)
-    {
-        return NULL;
-    }
-
-    Status = RtlCreateUserThread(hProcess,
+    status = RtlCreateUserThread(hProcess,
                                  NULL,
                                  FALSE, 
                                  0,
@@ -39,18 +22,18 @@ NewCreateRemoteThread(HANDLE hProcess,
                                  0,
                                  lpStartAddress,
                                  lpParameter,
-                                 &ThreadHandle,
-                                 &ClientId);
+                                 &threadHandle,
+                                 &clientId);
 
-    if (Status != NT_STATUS_SUCCESS)
+    if (status != STATUS_SUCCESS)
     {
         return NULL;
     }
 
     if (lpThreadId)
     {
-        *lpThreadId = (DWORD)ClientId.UniqueThread;
+        *lpThreadId = (DWORD)clientId.UniqueThread;
     }
 
-    return ThreadHandle;
+    return threadHandle;
 }

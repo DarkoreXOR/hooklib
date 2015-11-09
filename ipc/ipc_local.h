@@ -5,19 +5,20 @@
 #include <tchar.h>
 #include "ipc_event.h"
 #include "ipc_shared_memory.h"
+#include "ipc_utils.h"
 
 #define IPC_LOCAL_CHANNEL L"__LOC_CH"
 #define IPC_LOCAL_CHANNEL_MESSAGE_EVENT L"__LOC_CH_MSG_EVNT"
 #define IPC_LOCAL_CHANNEL_ANSWER_EVENT L"__LOC_CH_ANSWR_EVNT"
 #define IPC_LOCAL_CHANNEL_READY_EVENT L"__LOC_CH_RDY_EVNT"
 
-// channel
+// channel functions
 
 BOOL
 LocalCreateChannel(
     LPCWSTR ChannelName,
     BOOL GlobalObject,
-    SIZE_T Size,
+    DWORD Size,
     PSHARED_MEMORY *SharedMemory
 );
 
@@ -38,39 +39,39 @@ LocalCloseChannel(
     PSHARED_MEMORY SharedMemory
 );
 
-// message read / write
+// message read / write functions
 
 BOOL
 LocalReadChannelMessage(
     PSHARED_MEMORY SharedMemory,
     LPVOID MessageBuf,
-    SIZE_T MessageSize
+    DWORD MessageSize
 );
 
 BOOL
 LocalWriteChannelMessage(
     PSHARED_MEMORY SharedMemory,
     LPVOID MessageBuf,
-    SIZE_T MessageSize
+    DWORD MessageSize
 );
 
-// answer read / write
+// answer read / write functions
 
 BOOL
 LocalReadChannelAnswer(
     PSHARED_MEMORY SharedMemory,
     LPVOID AnswerBuf,
-    SIZE_T AnswerSize
+    DWORD AnswerSize
 );
 
 BOOL
 LocalWriteChannelAnswer(
     PSHARED_MEMORY SharedMemory,
     LPVOID AnswerBuf,
-    SIZE_T AnswerSize
+    DWORD AnswerSize
 );
 
-// channel message event
+// channel message event functions
 
 BOOL
 LocalCreateChannelMessageEvent(
@@ -96,7 +97,7 @@ LocalWaitChannelMessageEvent(
     DWORD Timeout
 );
 
-// channel answer event
+// channel answer event functions
 
 BOOL
 LocalCreateChannelAnswerEvent(
@@ -122,7 +123,7 @@ LocalWaitChannelAnswerEvent(
     DWORD Timeout
 );
 
-// channel answer event
+// channel answer event functions
 
 BOOL
 LocalCreateChannelReadyEvent(
@@ -148,6 +149,4 @@ LocalWaitChannelReadyEvent(
     DWORD Timeout
 );
 
-
 #endif
-
