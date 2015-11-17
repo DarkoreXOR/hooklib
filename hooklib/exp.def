@@ -1,0 +1,25 @@
+EXPORTS
+InitializeLibrary               @1
+FinalizeLibrary                 @2
+IsX64System                     @3
+IsX64Process                    @4
+CreateIpcChannel                @5
+DestroyIpcChannel               @6
+SendIpcMessage                  @7
+InjectLibrary                   @8
+InjectLibrary32                 @9
+InjectLibrary64                 @10
+UninjectLibrary                 @11
+UninjectLibrary32               @12
+UninjectLibrary64               @13
+HookCode                        @14
+UnhookCode                      @15
+HookApi                         @16
+UnhookApi                       @17
+EnableHook                      @18
+DisableHook                     @19
+EnableAllHooks                  @20
+DisableAllHooks                 @21
+ProcessHandleToId               @22
+InjectLibraryToAllProcesses     @23
+UninjectLibraryFromAllProcesses @24
