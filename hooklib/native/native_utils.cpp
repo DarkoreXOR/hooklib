@@ -1,3 +1,32 @@
+/*
+ *  [ BSD License: http://opensource.org/licenses/bsd-license.php ]
+ *  ===========================================================================
+ *  Copyright (c) 2015, Lakutin Ivan
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    1. Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ *  TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ *  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "native_utils.h"
 
 LPVOID
@@ -37,7 +66,7 @@ NtQueryVirtualMemory(IN HANDLE ProcessHandle,
     NT_QUERY_VIRTUAL_MEMORY proc;
 
     proc = NTDLL_IMPORT(NT_QUERY_VIRTUAL_MEMORY,
-                        "NtQueryVirtualMemory");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -82,7 +111,7 @@ RtlCreateUserThread(HANDLE ProcessHandle,
     RTL_CREATE_USER_THREAD proc;
 
     proc = NTDLL_IMPORT(RTL_CREATE_USER_THREAD,
-                        "RtlCreateUserThread");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -114,9 +143,9 @@ RtlInitUnicodeString(PNT_UNICODE_STRING DestinationString,
     );
 
     RTL_INIT_UNICODE_STRING proc;
-    
+
     proc = NTDLL_IMPORT(RTL_INIT_UNICODE_STRING,
-                        "RtlInitUnicodeString");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -146,9 +175,9 @@ NtCreatePort(OUT PHANDLE PortHandle,
     );
 
     NT_CREATE_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_CREATE_PORT,
-                        "NtCreatePort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -175,9 +204,9 @@ NtListenPort(IN HANDLE PortHandle,
     );
 
     NT_LISTEN_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_LISTEN_PORT,
-                        "NtListenPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -213,9 +242,9 @@ NtConnectPort(OUT PHANDLE PortHandle,
     );
 
     NT_CONNECT_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_CONNECT_PORT,
-                        "NtConnectPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -241,7 +270,7 @@ NtAcceptConnectPort(OUT PHANDLE PortHandle,
                     IN OUT PNT_PORT_VIEW ServerView OPTIONAL,
                     OUT PNT_REMOTE_PORT_VIEW ClientView OPTIONAL)
 {
-    typedef 
+    typedef
     NTSTATUS
     (NTAPI *NT_ACCEPT_CONNECT_PORT)(
         OUT PHANDLE PortHandle,
@@ -253,9 +282,9 @@ NtAcceptConnectPort(OUT PHANDLE PortHandle,
     );
 
     NT_ACCEPT_CONNECT_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_ACCEPT_CONNECT_PORT,
-                        "NtAcceptConnectPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -283,9 +312,9 @@ NtRequestPort(IN HANDLE PortHandle,
     );
 
     NT_REQUEST_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_REQUEST_PORT,
-                        "NtRequestPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -311,9 +340,9 @@ NtRequestWaitReplyPort(IN HANDLE PortHandle,
     );
 
     NT_REQUEST_WAIT_REPLY_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_REQUEST_WAIT_REPLY_PORT,
-                        "NtRequestWaitReplyPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -336,9 +365,9 @@ NtClose(IN HANDLE Handle)
     );
 
     NT_CLOSE proc;
-    
+
     proc = NTDLL_IMPORT(NT_CLOSE,
-                        "NtClose");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -359,9 +388,9 @@ NtCompleteConnectPort(IN HANDLE PortHandle)
     );
 
     NT_COMPLETE_CONNECT_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_COMPLETE_CONNECT_PORT,
-                        "NtCompleteConnectPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -388,9 +417,9 @@ NtReplyWaitReceivePort(IN HANDLE PortHandle,
     );
 
     NT_REPLY_WAIT_RECEIVE_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_REPLY_WAIT_RECEIVE_PORT,
-                        "NtReplyWaitReceivePort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -416,9 +445,9 @@ NtReplyPort(IN HANDLE PortHandle,
     );
 
     NT_REPLY_PORT proc;
-    
+
     proc = NTDLL_IMPORT(NT_REPLY_PORT,
-                        "NtReplyPort");
+                        __FUNCTION__);
 
     if (!proc)
     {
@@ -440,7 +469,7 @@ NtReplyWaitReplyPort(IN HANDLE PortHandle,
     );
 
     NT_REPLY_WAIT_REPLY_PORT proc = NTDLL_IMPORT(NT_REPLY_WAIT_REPLY_PORT,
-                                                 "NtReplyWaitReplyPort");
+                                                 __FUNCTION__);
 
     if (!proc)
     {

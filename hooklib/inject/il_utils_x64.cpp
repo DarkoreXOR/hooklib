@@ -1,3 +1,32 @@
+/*
+ *  [ BSD License: http://opensource.org/licenses/bsd-license.php ]
+ *  ===========================================================================
+ *  Copyright (c) 2015, Lakutin Ivan
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    1. Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ *  TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ *  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "il_utils_x64.h"
 
 BOOL
@@ -123,7 +152,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -136,7 +166,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         IlDeallocate(ProcessHandle, remoteModuleHandle);
         return STATUS_UNSUCCESSFUL;
     }
@@ -150,7 +181,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         IlDeallocate(ProcessHandle, remoteModuleHandle);
         IlDeallocate(ProcessHandle, remoteReturnValue);
         return STATUS_UNSUCCESSFUL;
@@ -177,7 +209,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         IlDeallocate(ProcessHandle, remoteModuleHandle);
         IlDeallocate(ProcessHandle, remoteReturnValue);
         IlDeallocate(ProcessHandle, remoteCode);
@@ -186,7 +219,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
 
     ResumeThread(threadHandle);
 
-    result = WaitForSingleObject(threadHandle, Timeout) == WAIT_OBJECT_0;
+    result = WaitForSingleObject(threadHandle,
+                                 Timeout) == WAIT_OBJECT_0;
 
     CloseHandle(threadHandle);
 
@@ -194,7 +228,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         IlDeallocate(ProcessHandle, remoteModuleHandle);
         IlDeallocate(ProcessHandle, remoteReturnValue);
         IlDeallocate(ProcessHandle, remoteCode);
@@ -210,7 +245,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         IlDeallocate(ProcessHandle, remoteModuleHandle);
         IlDeallocate(ProcessHandle, remoteReturnValue);
         IlDeallocate(ProcessHandle, remoteCode);
@@ -226,7 +262,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
     {
         IlDeallocate(ProcessHandle, remotePathToFile);
         IlDeallocate(ProcessHandle, remoteFlags);
-        IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+        IlDeallocateUnicodeString(ProcessHandle,
+                                  remoteModuleFileName);
         IlDeallocate(ProcessHandle, remoteModuleHandle);
         IlDeallocate(ProcessHandle, remoteReturnValue);
         IlDeallocate(ProcessHandle, remoteCode);
@@ -236,7 +273,8 @@ LdrLoadDllEx64(HANDLE ProcessHandle,
 
     IlDeallocate(ProcessHandle, remotePathToFile);
     IlDeallocate(ProcessHandle, remoteFlags);
-    IlDeallocateUnicodeString(ProcessHandle, remoteModuleFileName);
+    IlDeallocateUnicodeString(ProcessHandle,
+                              remoteModuleFileName);
     IlDeallocate(ProcessHandle, remoteModuleHandle);
     IlDeallocate(ProcessHandle, remoteReturnValue);
     IlDeallocate(ProcessHandle, remoteCode);
@@ -344,12 +382,12 @@ LdrUnloadDllEx64(HANDLE ProcessHandle,
                                     remoteReturnValue);
 
     threadHandle = ThdNewCreateRemoteThread(ProcessHandle,
-                                         NULL,
-                                         0,
-                                         (LPTHREAD_START_ROUTINE)remoteCode,
-                                         NULL,
-                                         0,
-                                         NULL);
+                                            NULL,
+                                            0,
+                                            (LPTHREAD_START_ROUTINE)remoteCode,
+                                            NULL,
+                                            0,
+                                            NULL);
 
     if (!threadHandle)
     {
@@ -369,7 +407,8 @@ LdrUnloadDllEx64(HANDLE ProcessHandle,
         return STATUS_UNSUCCESSFUL;
     }
 
-    result = WaitForSingleObject(threadHandle, Timeout) == WAIT_OBJECT_0;
+    result = WaitForSingleObject(threadHandle,
+                                 Timeout) == WAIT_OBJECT_0;
 
     CloseHandle(threadHandle);
 

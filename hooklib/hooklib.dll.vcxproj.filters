@@ -25,15 +25,6 @@
     <Filter Include="Заголовочные файлы\hook">
       <UniqueIdentifier>{1ae2a765-3852-4a45-84f5-0730fe7c0f6d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\asmjit">
-      <UniqueIdentifier>{7a0bf9da-433e-4a93-8031-170247f1879b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\asmjit\x86">
-      <UniqueIdentifier>{d6dd6941-c581-435e-a3b0-1b8397dcb7de}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\asmjit\base">
-      <UniqueIdentifier>{c27e205f-3f96-48da-8969-2ab6b1f8e317}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\thread">
       <UniqueIdentifier>{6cfd38e3-0b72-41e9-8b36-99dcd5e05003}</UniqueIdentifier>
     </Filter>
@@ -87,6 +78,21 @@
     </Filter>
     <Filter Include="Заголовочные файлы\fast_ipc">
       <UniqueIdentifier>{f1c3d8cf-bc93-40c6-ba5f-92c091fc026a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EXTERNAL_LIBS">
+      <UniqueIdentifier>{7820ef13-82f2-4dae-a53b-d194b17bc16f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EXTERNAL_LIBS\minhook">
+      <UniqueIdentifier>{433caa68-f4fd-42f9-8506-3e4a5a6e88b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EXTERNAL_LIBS\asmjit">
+      <UniqueIdentifier>{7a0bf9da-433e-4a93-8031-170247f1879b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EXTERNAL_LIBS\asmjit\x86">
+      <UniqueIdentifier>{d6dd6941-c581-435e-a3b0-1b8397dcb7de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EXTERNAL_LIBS\asmjit\base">
+      <UniqueIdentifier>{c27e205f-3f96-48da-8969-2ab6b1f8e317}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -176,113 +182,110 @@
     <ClInclude Include="inject\il_utils_x86.h">
       <Filter>Заголовочные файлы\inject</Filter>
     </ClInclude>
-    <ClInclude Include="hook\MinHook.h">
-      <Filter>Заголовочные файлы\hook</Filter>
-    </ClInclude>
     <ClInclude Include="hook\hook_wrapper.h">
       <Filter>Заголовочные файлы\hook</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\codegen.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\compiler.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\constpool.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\containers.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\context_p.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\cpuinfo.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\cputicks.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\error.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\globals.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\intutil.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\lock.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\logger.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\operand.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\runtime.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\string.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\vectypes.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\vmem.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\zone.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base\assembler.h">
-      <Filter>Заголовочные файлы\asmjit\base</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\base</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86compiler.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86context_p.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86cpuinfo.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86inst.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86operand.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86scheduler_p.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86\x86assembler.h">
-      <Filter>Заголовочные файлы\asmjit\x86</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit\x86</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\apibegin.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\apiend.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\asmjit.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\base.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\build.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\config.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\host.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="asmjit\x86.h">
-      <Filter>Заголовочные файлы\asmjit</Filter>
+      <Filter>EXTERNAL_LIBS\asmjit</Filter>
     </ClInclude>
     <ClInclude Include="process\process_utils.h">
       <Filter>Заголовочные файлы\process</Filter>
@@ -328,6 +331,9 @@
     </ClInclude>
     <ClInclude Include="fastipc\ipc_thread.h">
       <Filter>Заголовочные файлы\fast_ipc</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\MinHook.h">
+      <Filter>EXTERNAL_LIBS\minhook</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
