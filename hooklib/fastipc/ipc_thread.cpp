@@ -32,6 +32,8 @@ IpcCreateThread(IN IPC_THREAD_ROUTINE ThreadRoutine,
             LEAVE(FALSE);
         }
 
+        InitializeCriticalSection(&NewThread->CriticalSection);
+
         NewThread->DoSafeStop = FALSE;
         NewThread->IsSuspended = CreateSuspended;
         NewThread->ThreadRoutine = ThreadRoutine;
@@ -57,6 +59,7 @@ IpcCreateThread(IN IPC_THREAD_ROUTINE ThreadRoutine,
     {
         if (!TRY_VALUE && NewThread)
         {
+            DeleteCriticalSection(&NewThread->CriticalSection);
             TerminateThread(NewThread->ObjectHandle, 0);
             CloseHandle(NewThread->ObjectHandle);
             DeallocMem(NewThread);
@@ -74,6 +77,7 @@ IpcDestroyThread(IN PTHREAD *Thread)
 {
     BOOL Result;
 
+    DeleteCriticalSection(&(*Thread)->CriticalSection);
     Result = CloseHandle((*Thread)->ObjectHandle);
     Result = DeallocMem(*Thread) && Result;
 
@@ -87,12 +91,24 @@ IpcSafeStopThread(IN PTHREAD Thread,
                   IN BOOL WaitThread,
                   IN DWORD Timeout)
 {
+    EnterCriticalSection(&Thread->CriticalSection);
     Thread->DoSafeStop = TRUE;
+    LeaveCriticalSection(&Thread->CriticalSection);
 
     if (WaitThread)
     {
         WaitForSingleObject(Thread->ObjectHandle, Timeout);
     }
+}
+
+BOOL
+IpcIsSafeStopThread(IN PTHREAD Thread)
+{
+    BOOL Result;
+    EnterCriticalSection(&Thread->CriticalSection);
+    Result = Thread->DoSafeStop;
+    LeaveCriticalSection(&Thread->CriticalSection);
+    return Result;
 }
 
 BOOL

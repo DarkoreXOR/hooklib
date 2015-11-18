@@ -134,6 +134,7 @@ TestIpcRoutine(LPCWSTR ChannelName,
 {
     EnterCriticalSection(&cs);
     wprintf_s(L"[%llu] %s\n", ++Counter, MessageBuf);
+    *((BOOL*)AnswerBuf) = rand() % 2 == 1;
     LeaveCriticalSection(&cs);
     return TRUE;
 }
@@ -144,7 +145,7 @@ DWORD
 WINAPI
 LoopSend(LPVOID Parameter)
 {
-    LPCWSTR Message = L"My test message";
+    LPCWSTR Message = L"Wow. There is random text...";
     DWORD MessageSize = (DWORD)((wcslen(Message) + 1) * sizeof(WCHAR));
     BOOL AnswerBool;
 
@@ -161,6 +162,11 @@ LoopSend(LPVOID Parameter)
             printf("thread %d exit\n", GetCurrentThreadId());
             return 1;
         }
+
+        /*
+        printf("server return boolean = %s\n",
+               AnswerBool ? "TRUE" : "FALSE");
+        */
     }
 
     return 0;
@@ -175,7 +181,6 @@ int main()
 #else
     LoadLibraryW(L"hooklib32");
 #endif
-    InitializeLibrary();
 
     InitializeCriticalSection(&cs);
 
@@ -201,14 +206,17 @@ int main()
 
     getchar();
 
-    //WaitForMultipleObjects(NumOfThreads, ThreadHandles, TRUE, INFINITE);
-
     for (int i = 0; i < NumOfThreads; ++i)
     {
         CloseHandle(ThreadHandles[i]);
     }
 
-    DestroyIpcChannel(ChannelData);
+    // all threads will be stopped, SendIpcMessage() returns FALSE
+
+    if (!DestroyIpcChannel(ChannelData))
+    {
+        printf("DestroyIpcChannel() failed\n");
+    }
 
     printf("all tests done\n");
     getchar();

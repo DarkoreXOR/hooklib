@@ -26,21 +26,12 @@ IpcCreateIpcChannel(LPCWSTR ChannelName,
         return FALSE;
     }
 
-    if (!IpcServerCreateEvent(ChannelName,
-                              MultiSession,
-                              &ChannelDataBuffer->ChannelReadyEvent))
-    {
-        IpcServerDeallocateChannelData(ChannelDataBuffer);
-        return FALSE;
-    }
-
     if (!IpcServerCreateServerThread(ChannelName,
                                      Routine,
                                      MultiSession,
                                      &Thread))
     {
         IpcServerDeallocateChannelData(ChannelDataBuffer);
-        IpcServerDestroyEvent(&ChannelDataBuffer->ChannelReadyEvent);
         return FALSE;
     }
 
@@ -71,7 +62,6 @@ IpcDestroyIpcChannel(PVOID ChannelData)
                       INFINITE);
 
     Result = IpcDestroyServerThread(&ChannelDataBuffer->ServerThread);
-    Result = IpcServerDestroyEvent(&ChannelDataBuffer->ChannelReadyEvent) && Result;
     Result = IpcServerDeallocateChannelData(ChannelDataBuffer) && Result;
 
     return Result;
@@ -86,12 +76,14 @@ IpcSendIpcMessage(LPCWSTR ChannelName,
                   DWORD Timeout,
                   BOOL MultiSession)
 {
+    /*
     if (!IpcClientWaitChannel(ChannelName,
                               MultiSession,
                               Timeout))
     {
         return FALSE;
     }
+    */
 
     if (!IpcClientCallIpcServer(ChannelName,
                                 MessageBuffer,

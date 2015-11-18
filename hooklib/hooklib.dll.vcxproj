@@ -181,7 +181,6 @@
     <ClCompile Include="dll_utils.cpp" />
     <ClCompile Include="fastipc\ipc.cpp" />
     <ClCompile Include="fastipc\ipc_client.cpp" />
-    <ClCompile Include="fastipc\ipc_event.cpp" />
     <ClCompile Include="fastipc\ipc_named_pipe.cpp" />
     <ClCompile Include="fastipc\ipc_server.cpp" />
     <ClCompile Include="fastipc\ipc_thread.cpp" />
@@ -239,7 +238,6 @@
     <ClInclude Include="dll_decls.h" />
     <ClInclude Include="fastipc\ipc.h" />
     <ClInclude Include="fastipc\ipc_client.h" />
-    <ClInclude Include="fastipc\ipc_event.h" />
     <ClInclude Include="fastipc\ipc_named_pipe.h" />
     <ClInclude Include="fastipc\ipc_server.h" />
     <ClInclude Include="fastipc\ipc_thread.h" />

@@ -5,14 +5,6 @@
 #include "../defines.h"
 #include "ipc_types.h"
 #include "ipc_named_pipe.h"
-#include "ipc_event.h"
-
-BOOL
-IpcClientWaitChannel(
-    LPCWSTR ChannelName,
-    BOOL MultiSession,
-    DWORD Timeout
-);
 
 BOOL
 IpcClientCallIpcServer(

@@ -17,7 +17,6 @@ IpcServerTryCreateChannel(LPCWSTR ChannelName,
                           BOOL MultiSession)
 {
     NAMED_PIPE Pipe;
-    EVENT Event;
 
     TRY(BOOL, TRUE)
     {
@@ -30,43 +29,13 @@ IpcServerTryCreateChannel(LPCWSTR ChannelName,
         {
             LEAVE(FALSE);
         }
-
-        if (!IpcCreateEventW(MultiSession ? L"Global" : NULL,
-                             ChannelName,
-                             L"_CHRDYEVNT",
-                             FALSE,
-                             FALSE,
-                             &Event))
-        {
-            LEAVE(FALSE);
-        }
     }
     FINALLY
     {
         IpcDestroyNamedPipe(&Pipe);
-        IpcDestroyEvent(&Event);
     }
 
     return TRY_VALUE;
-}
-
-BOOL
-IpcServerCreateEvent(LPCWSTR ChannelName,
-                     BOOL MultiSession,
-                     PEVENT Event)
-{
-    return IpcCreateEventW(MultiSession ? L"Global" : NULL,
-                           ChannelName,
-                           L"_CHRDYEVNT",
-                           FALSE,
-                           FALSE,
-                           Event);
-}
-
-BOOL
-IpcServerDestroyEvent(PEVENT Event)
-{
-    return IpcDestroyEvent(Event);
 }
 
 DWORD
@@ -74,7 +43,6 @@ IpcServerThread(PTHREAD Thread,
                 LPVOID UserData)
 {
     PIPC_SERVER_THREAD_DATA ThreadData;
-    EVENT ChannelReadyEvent;
     NAMED_PIPE Pipe;
     IPC_CHANNEL_HEADER Header;
     LPVOID InternalBuffer = NULL;
@@ -84,14 +52,6 @@ IpcServerThread(PTHREAD Thread,
 
     TRY(DWORD, 0)
     {
-        if (!IpcOpenEventW(ThreadData->MultiSession ? L"Global" : NULL,
-                           ThreadData->ChannelName,
-                           L"_CHRDYEVNT",
-                           &ChannelReadyEvent))
-        {
-            LEAVE(1);
-        }
-
         if (!IpcCreateNamedPipe(ThreadData->ChannelName,
                                 FALSE,
                                 0x1000,
@@ -104,15 +64,10 @@ IpcServerThread(PTHREAD Thread,
 
         while (TRUE)
         {
-            if (!IpcSetEvent(&ChannelReadyEvent))
-            {
-                MessageBoxA(0, "3", "event ok", 0);
-                LEAVE(1);
-            }
-
             if (!IpcWaitConnectClient(&Pipe,
                                       INFINITE,
-                                      &Thread->DoSafeStop))
+                                      Thread,
+                                      (NAMED_PIPE_LEAVE_PROC)IpcIsSafeStopThread))
             {
                 LEAVE(1);
             }
@@ -121,7 +76,8 @@ IpcServerThread(PTHREAD Thread,
                                       &Header,
                                       sizeof(IPC_CHANNEL_HEADER),
                                       TRUE,
-                                      &Thread->DoSafeStop))
+                                      Thread,
+                                      (NAMED_PIPE_LEAVE_PROC)IpcIsSafeStopThread))
             {
                 LEAVE(1);
             }
@@ -132,7 +88,8 @@ IpcServerThread(PTHREAD Thread,
                                      &Accepted,
                                      sizeof(BOOL),
                                      TRUE,
-                                     &Thread->DoSafeStop))
+                                     Thread,
+                                     (NAMED_PIPE_LEAVE_PROC)IpcIsSafeStopThread))
             {
                 LEAVE(1);
             }
@@ -143,13 +100,18 @@ IpcServerThread(PTHREAD Thread,
                 LEAVE(1);
             }
 
-            if (!IpcReadFromNamedPipe(&Pipe,
-                                      InternalBuffer,
-                                      Header.MessageSize,
-                                      TRUE,
-                                      &Thread->DoSafeStop))
+            if (Header.HasMessage && !IpcReadFromNamedPipe(&Pipe,
+                                                           InternalBuffer,
+                                                           Header.MessageSize,
+                                                           TRUE,
+                                                           Thread,
+                                                           (NAMED_PIPE_LEAVE_PROC)IpcIsSafeStopThread))
             {
-                LEAVE(1);
+                IpcFlushNamedPipe(&Pipe);
+                IpcDisconnectClient(&Pipe);
+                DeallocMem(InternalBuffer);
+                InternalBuffer = NULL;
+                continue;
             }
 
             ThreadData->Routine(ThreadData->ChannelName,
@@ -158,13 +120,14 @@ IpcServerThread(PTHREAD Thread,
                                 InternalBuffer,
                                 Header.AnswerSize);
 
-            if (Header.HasAnswer && !IpcWriteToNamedPipe(&Pipe,
-                                                         InternalBuffer,
-                                                         Header.AnswerSize,
-                                                         TRUE,
-                                                         &Thread->DoSafeStop))
+            if (Header.HasAnswer)
             {
-                LEAVE(1);
+                IpcWriteToNamedPipe(&Pipe,
+                                    InternalBuffer,
+                                    Header.AnswerSize,
+                                    TRUE,
+                                    Thread,
+                                    (NAMED_PIPE_LEAVE_PROC)IpcIsSafeStopThread);
             }
 
             IpcFlushNamedPipe(&Pipe);
@@ -176,7 +139,6 @@ IpcServerThread(PTHREAD Thread,
     }
     FINALLY
     {
-        IpcCloseEvent(&ChannelReadyEvent);
         IpcDisconnectClient(&Pipe);
         IpcDestroyNamedPipe(&Pipe);
         DeallocMem(InternalBuffer);
