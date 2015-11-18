@@ -1,7 +1,6 @@
 #ifndef __IPC_TYPES_H
 #define __IPC_TYPES_H
 
-#include "ipc_event.h"
 #include "ipc_thread.h"
 #include "ipc_named_pipe.h"
 
@@ -20,7 +19,6 @@ BOOL
 typedef struct _IPC_CHANNEL_DATA
 {
     PTHREAD ServerThread;
-    EVENT ChannelReadyEvent;
     NAMED_PIPE ServerNamedPipe;
 } IPC_CHANNEL_DATA, *PIPC_CHANNEL_DATA;
 

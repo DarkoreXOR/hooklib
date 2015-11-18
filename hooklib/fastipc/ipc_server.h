@@ -5,7 +5,6 @@
 #include "../defines.h"
 #include "ipc_types.h"
 #include "ipc_named_pipe.h"
-#include "ipc_event.h"
 #include "ipc_thread.h"
 
 PIPC_CHANNEL_DATA
@@ -20,18 +19,6 @@ BOOL
 IpcServerTryCreateChannel(
     LPCWSTR ChannelName,
     BOOL MultiSession
-);
-
-BOOL
-IpcServerCreateEvent(
-    LPCWSTR ChannelName,
-    BOOL MultiSession,
-    PEVENT Event
-);
-
-BOOL
-IpcServerDestroyEvent(
-    PEVENT Event
 );
 
 BOOL

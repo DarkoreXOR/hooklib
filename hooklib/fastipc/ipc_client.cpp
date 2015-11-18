@@ -1,74 +1,5 @@
 #include "ipc_client.h"
 
-DWORD
-IpcWaitEventEx(LPCWSTR ChannelName,
-               LPCWSTR Postfix,
-               BOOL GlobalObject,
-               DWORD Timeout)
-{
-    EVENT EventObject;
-    LPCWSTR ObjectNamespace = NULL;
-    DWORD WaitStatus;
-    DWORD TimeoutEx;
-
-    if (Timeout == 0)
-    {
-        return FALSE;
-    }
-
-    if (GlobalObject)
-    {
-        ObjectNamespace = L"Global";
-    }
-
-    TimeoutEx = Timeout;
-
-    while (TRUE)
-    {
-        if (!IpcOpenEventW(ObjectNamespace,
-                           ChannelName,
-                           Postfix,
-                           &EventObject))
-        {
-            return WAIT_FAILED;
-        }
-
-        WaitStatus = IpcWaitEvent(&EventObject, 1);
-
-        TimeoutEx--;
-
-        IpcCloseEvent(&EventObject);
-
-        if (WaitStatus != WAIT_TIMEOUT)
-        {
-            break;
-        }
-
-        if (!TimeoutEx && Timeout != INFINITE)
-        {
-            break;
-        }
-    }
-
-    return WaitStatus;
-}
-
-
-BOOL
-IpcClientWaitChannel(LPCWSTR ChannelName,
-                     BOOL MultiSession,
-                     DWORD Timeout)
-{
-    DWORD WaitStatus;
-
-    WaitStatus = IpcWaitEventEx(ChannelName,
-                                L"_CHRDYEVNT",
-                                MultiSession,
-                                Timeout);
-
-    return WaitStatus == WAIT_OBJECT_0;
-}
-
 BOOL
 IpcClientCallIpcServer(LPCWSTR ChannelName,
                        LPVOID MessageBuffer,
@@ -99,6 +30,7 @@ IpcClientCallIpcServer(LPCWSTR ChannelName,
                                  &Header,
                                  sizeof(IPC_CHANNEL_HEADER),
                                  FALSE,
+                                 NULL,
                                  NULL))
         {
             LEAVE(FALSE);
@@ -108,6 +40,7 @@ IpcClientCallIpcServer(LPCWSTR ChannelName,
                                   &Accepted,
                                   sizeof(BOOL),
                                   FALSE,
+                                  NULL,
                                   NULL))
         {
             LEAVE(FALSE);
@@ -117,6 +50,7 @@ IpcClientCallIpcServer(LPCWSTR ChannelName,
                                  MessageBuffer,
                                  MessageSize,
                                  FALSE,
+                                 NULL,
                                  NULL))
         {
             LEAVE(FALSE);
@@ -126,6 +60,7 @@ IpcClientCallIpcServer(LPCWSTR ChannelName,
                                                       AnswerBuffer,
                                                       AnswerSize,
                                                       FALSE,
+                                                      NULL,
                                                       NULL))
         {
             LEAVE(FALSE);

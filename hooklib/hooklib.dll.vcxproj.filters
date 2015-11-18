@@ -144,9 +144,6 @@
     <ClCompile Include="fastipc\ipc.cpp">
       <Filter>Файлы исходного кода\fast_ipc</Filter>
     </ClCompile>
-    <ClCompile Include="fastipc\ipc_event.cpp">
-      <Filter>Файлы исходного кода\fast_ipc</Filter>
-    </ClCompile>
     <ClCompile Include="fastipc\ipc_client.cpp">
       <Filter>Файлы исходного кода\fast_ipc</Filter>
     </ClCompile>
@@ -315,9 +312,6 @@
       <Filter>Заголовочные файлы\fast_ipc</Filter>
     </ClInclude>
     <ClInclude Include="fastipc\ipc.h">
-      <Filter>Заголовочные файлы\fast_ipc</Filter>
-    </ClInclude>
-    <ClInclude Include="fastipc\ipc_event.h">
       <Filter>Заголовочные файлы\fast_ipc</Filter>
     </ClInclude>
     <ClInclude Include="defines.h">

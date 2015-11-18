@@ -5,7 +5,6 @@
 #include "../memory/heap.h"
 #include "../defines.h"
 #include "ipc_types.h"
-#include "ipc_event.h"
 #include "ipc_named_pipe.h"
 #include "ipc_client.h"
 #include "ipc_server.h"

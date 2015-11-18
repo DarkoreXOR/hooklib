@@ -21,6 +21,7 @@ typedef struct _THREAD
     BOOL IsSuspended;
     LPVOID UserData;
     BOOL DoSafeStop;
+    CRITICAL_SECTION CriticalSection;
     IPC_THREAD_ROUTINE ThreadRoutine;
 } THREAD, *PTHREAD;
 
@@ -42,6 +43,11 @@ IpcSafeStopThread(
     IN PTHREAD Thread,
     IN BOOL WaitThread,
     IN DWORD Timeout
+);
+
+BOOL
+IpcIsSafeStopThread(
+    IN PTHREAD Thread
 );
 
 BOOL

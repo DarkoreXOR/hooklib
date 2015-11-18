@@ -220,40 +220,64 @@ IpcCloseNamedPipe(IN PNAMED_PIPE NamedPipe)
 BOOL
 IpcWaitConnectClient(IN PNAMED_PIPE NamedPipe,
                      IN DWORD Timeout,
-                     IN PBOOL LeaveFlag)
+                     IN LPVOID Context,
+                     IN NAMED_PIPE_LEAVE_PROC LeaveProc)
 {
     BOOL Result;
-    OVERLAPPED Overlapped = { 0 };
+    volatile OVERLAPPED Overlapped = { 0 };
     DWORD UnknownValue;
+    DWORD LastError;
 
     Overlapped.hEvent = NamedPipe->EventHandle;
 
     Result = ConnectNamedPipe(NamedPipe->ObjectHandle,
-                              &Overlapped);
+                              (LPOVERLAPPED)&Overlapped);
 
-    if (Result && GetLastError() != ERROR_IO_PENDING)
+    if (Result)
     {
         return FALSE;
     }
 
-    while (!GetOverlappedResult(NamedPipe->ObjectHandle,
-                                &Overlapped,
-                                &UnknownValue,
-                                FALSE) && GetLastError() == ERROR_IO_INCOMPLETE)
+    LastError = GetLastError();
+
+    if (LastError == ERROR_PIPE_CONNECTED)
     {
-        if (LeaveFlag && *LeaveFlag)
+        return TRUE;
+    }
+
+    if (LastError == ERROR_IO_PENDING)
+    {
+        while (TRUE)
         {
-            break;
+            Result = GetOverlappedResult(NamedPipe->ObjectHandle,
+                                         (LPOVERLAPPED)&Overlapped,
+                                         &UnknownValue,
+                                         FALSE);
+
+            if (!Result && GetLastError() != ERROR_IO_INCOMPLETE)
+            {
+                break;
+            }
+
+            if (Result && GetLastError() == ERROR_BROKEN_PIPE)
+            {
+                break;
+            }
+
+            if (HasOverlappedIoCompleted(&Overlapped))
+            {
+                break;
+            }
+
+            if (LeaveProc && LeaveProc(Context))
+            {
+                break;
+            }
         }
     }
 
-    if (HasOverlappedIoCompleted(&Overlapped))
-    {
-        Result = TRUE;
-    }
-
     Result = GetOverlappedResult(NamedPipe->ObjectHandle,
-                                 &Overlapped,
+                                 (LPOVERLAPPED)&Overlapped,
                                  &UnknownValue,
                                  FALSE);
 
@@ -271,11 +295,13 @@ IpcReadFromNamedPipe(IN PNAMED_PIPE NamedPipe,
                      IN LPVOID Buffer,
                      IN DWORD BufferSize,
                      IN BOOL IsServerSide,
-                     IN PBOOL LeaveFlag)
+                     IN LPVOID Context,
+                     IN NAMED_PIPE_LEAVE_PROC LeaveProc)
 {
     BOOL Result;
     DWORD Read;
-    OVERLAPPED Overlapped = { 0 };
+    volatile OVERLAPPED Overlapped = { 0 };
+    DWORD LastError;
 
     Overlapped.hEvent = NamedPipe->EventHandle;
 
@@ -283,46 +309,45 @@ IpcReadFromNamedPipe(IN PNAMED_PIPE NamedPipe,
                       Buffer,
                       BufferSize,
                       &Read,
-                      IsServerSide ? &Overlapped : NULL);
+                      IsServerSide ? (LPOVERLAPPED)&Overlapped : NULL);
 
-    if (!IsServerSide)
+    if (Result)
     {
-        return Result && Read == BufferSize;
+        return Read == BufferSize;
     }
-
-    // return if ReadFile is already completed
-
-    if (Result &&
-        Read == BufferSize &&
-        GetLastError() == ERROR_SUCCESS &&
-        HasOverlappedIoCompleted(&Overlapped))
-    {
-        return TRUE;
-    }
-
-    if (Result &&
-        GetLastError() != ERROR_IO_PENDING &&
-        !HasOverlappedIoCompleted(&Overlapped))
+    else if (!IsServerSide)
     {
         return FALSE;
     }
-
-    // ReadFile is pending
-
-    while (!GetOverlappedResult(NamedPipe->ObjectHandle,
-                                &Overlapped,
-                                &Read,
-                                FALSE) && GetLastError() == ERROR_IO_INCOMPLETE)
+    else
     {
-        if (LeaveFlag && *LeaveFlag)
+        LastError = GetLastError();
+
+        if (LastError == ERROR_BROKEN_PIPE)
         {
-            break;
+            return FALSE;
         }
-    }
 
-    if (HasOverlappedIoCompleted(&Overlapped))
-    {
-        Result = TRUE;
+        if (LastError == ERROR_HANDLE_EOF)
+        {
+            return FALSE;
+        }
+
+        if (LastError == ERROR_IO_PENDING)
+        {
+            while (TRUE)
+            {
+                if (HasOverlappedIoCompleted(&Overlapped))
+                {
+                    break;
+                }
+            }
+        }
+
+        Result = GetOverlappedResult(NamedPipe->ObjectHandle,
+                                     (LPOVERLAPPED)&Overlapped,
+                                     &Read,
+                                     FALSE);
     }
 
     return Result && Read == BufferSize;
@@ -333,11 +358,13 @@ IpcWriteToNamedPipe(IN PNAMED_PIPE NamedPipe,
                     IN LPVOID Buffer,
                     IN DWORD BufferSize,
                     IN BOOL IsServerSide,
-                    IN PBOOL LeaveFlag)
+                    IN LPVOID Context,
+                    IN NAMED_PIPE_LEAVE_PROC LeaveProc)
 {
     BOOL Result;
     DWORD Written;
-    OVERLAPPED Overlapped = { 0 };
+    volatile OVERLAPPED Overlapped = { 0 };
+    DWORD LastError;
 
     Overlapped.hEvent = NamedPipe->EventHandle;
 
@@ -345,48 +372,46 @@ IpcWriteToNamedPipe(IN PNAMED_PIPE NamedPipe,
                        Buffer,
                        BufferSize,
                        &Written,
-                       IsServerSide ? &Overlapped : NULL);
+                       IsServerSide ? (LPOVERLAPPED)&Overlapped : NULL);
 
-    if (!IsServerSide)
+    if (Result)
     {
-        return Result && Written == BufferSize;
+        return Written == BufferSize;
     }
-
-    if (Result &&
-        Written == BufferSize &&
-        GetLastError() == ERROR_SUCCESS &&
-        HasOverlappedIoCompleted(&Overlapped))
-    {
-        return TRUE;
-    }
-
-    if (Result &&
-        GetLastError() != ERROR_IO_PENDING &&
-        !HasOverlappedIoCompleted(&Overlapped))
+    else if (!IsServerSide)
     {
         return FALSE;
     }
-
-    while (!GetOverlappedResult(NamedPipe->ObjectHandle,
-                                &Overlapped,
-                                &Written,
-                                FALSE) && GetLastError() == ERROR_IO_INCOMPLETE)
+    else
     {
-        if (LeaveFlag && *LeaveFlag)
+        LastError = GetLastError();
+
+        if (LastError == ERROR_BROKEN_PIPE)
         {
-            break;
+            return FALSE;
         }
-    }
 
-    if (HasOverlappedIoCompleted(&Overlapped))
-    {
-        Result = TRUE;
-    }
+        if (LastError == ERROR_HANDLE_EOF)
+        {
+            return FALSE;
+        }
 
-    Result = GetOverlappedResult(NamedPipe->ObjectHandle,
-                                 &Overlapped,
-                                 &Written,
-                                 FALSE);
+        if (LastError == ERROR_IO_PENDING)
+        {
+            while (TRUE)
+            {
+                if (HasOverlappedIoCompleted(&Overlapped))
+                {
+                    break;
+                }
+            }
+        }
+
+        Result = GetOverlappedResult(NamedPipe->ObjectHandle,
+                                     (LPOVERLAPPED)&Overlapped,
+                                     &Written,
+                                     FALSE);
+    }
 
     return Result && Written == BufferSize;
 }

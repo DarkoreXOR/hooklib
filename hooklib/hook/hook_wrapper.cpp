@@ -3,21 +3,13 @@
 BOOL
 HkInitialize()
 {
-    MH_STATUS status;
-
-    status = MH_Initialize();
-
-    return status == MH_OK;
+    return MH_Initialize() == MH_OK;
 }
 
 BOOL
 HkUninitialize()
 {
-    MH_STATUS status;
-
-    status = MH_Uninitialize();
-
-    return status == MH_OK;
+    return MH_Uninitialize() == MH_OK;
 }
 
 BOOL

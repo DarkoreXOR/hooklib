@@ -14,6 +14,12 @@ typedef struct _NAMED_PIPE
     HANDLE EventHandle;
 } NAMED_PIPE, *PNAMED_PIPE;
 
+typedef
+BOOL
+(*NAMED_PIPE_LEAVE_PROC)(
+    LPVOID Context
+);
+
 BOOL
 IpcCreateNamedPipe(
     IN LPCWSTR ObjectName,
@@ -45,15 +51,9 @@ BOOL
 IpcWaitConnectClient(
     IN PNAMED_PIPE NamedPipe,
     IN DWORD Timeout,
-    IN PBOOL LeaveFlag
+    IN LPVOID Context,
+    IN NAMED_PIPE_LEAVE_PROC LeaveProc
 );
-
-/*
-BOOL
-IpcConnectClient(
-    IN PNAMED_PIPE NamedPipe
-);
-*/
 
 BOOL
 IpcDisconnectClient(
@@ -66,7 +66,8 @@ IpcReadFromNamedPipe(
     IN LPVOID Buffer,
     IN DWORD BufferSize,
     IN BOOL IsServerSide,
-    IN PBOOL LeaveFlag
+    IN LPVOID Context,
+    IN NAMED_PIPE_LEAVE_PROC LeaveProc
 );
 
 BOOL
@@ -75,7 +76,8 @@ IpcWriteToNamedPipe(
     IN LPVOID Buffer,
     IN DWORD BufferSize,
     IN BOOL IsServerSide,
-    IN PBOOL LeaveFlag
+    IN LPVOID Context,
+    IN NAMED_PIPE_LEAVE_PROC LeaveProc
 );
 
 BOOL
